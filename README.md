@@ -92,13 +92,12 @@
 > ```
 >
 > [!IMPORTANT]
+
 >   ```python
-> 
-> > 1. 用户规模（用户画像，行为分析，等）--测量
-> > 2. 数据存储模式（策略）--测量
-> > 3. 交互方式（communication的方式，寻址，群组交互，等）--测量
-> > 4. 安全协议（端到端加密协议，等）--安全分析
-> > 4. 不同decentralized messager存在的协议漏洞？
-> > 4. 分别针对与Direct Messaging以及Group Messaging做安全分析？比如，对Matrix、Berty的Group和Direct协议进行分析
-> 
+> 1. 用户规模（用户画像，行为分析，等）--测量
+> 2. 数据存储模式（策略）--测量
+> 3. 交互方式（communication的方式，寻址，群组交互，等）--测量
+> 4. 安全协议（端到端加密协议，等）--安全分析
+> 4. 不同decentralized messager存在的协议漏洞？
+> 4. 分别针对与Direct Messaging以及Group Messaging做安全分析？比如，对Matrix、Berty的Group和Direct协议进行分析
 >   ```
