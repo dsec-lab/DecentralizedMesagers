@@ -56,8 +56,6 @@
 
 3. **Status** (Waku Node，end-to-end encryption by X3dh, decentralized by Waku protocol)【done】
 
-   - [x] 手动构建获取部分的数据：
-
      ```python
      1. Waku采用的是noise协议进行密钥交换，Status采用X3DH协议保障端到端加密的安全，获取Waku网络的方式：运行以下命令：
      ./build/wakunode2 --rendezvous=false --dns-discovery=true --dns-discovery-url="enrtree://AIRVQ5DDA4FFWLRBCHJWUWOO6X6S4ZTZ5B667LQ6AJU6PEYDLRD5O@sandbox.waku.nodes.status.im" --discv5-discovery=true --discv5-enr-auto-update=true --relay-peer-exchange=true | tee waku.2025.03.12.log > /dev/null
