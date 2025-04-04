@@ -16,9 +16,7 @@
 4. 5个典型（多数与Signal有很深的渊源）：Matrix, Berty, Status, Atox，Jami
 
 5. 可以投的会议、期刊：
-ASE 2025（ddl在2025.5.30，8月中旬给意见）、WINE 2025（ddl大约在2025.7月中旬，9月中旬给结果）、
-INFOCOM 2026（ddl大约在2025.7月底）、ICSE2026（ddl在2025.7.11/7.18）、FSE 2026（ddl在2025.9月）、
-ISSTA 2026（ddl在2025.10月底）、WWW 2026（ddl大约在2025.10月中旬）
+	WINE 2025（ddl大约在2025.7月中旬，9月中旬给结果）、INFOCOM 2026（ddl大约在2025.7月底）、ICSE2026（ddl在2025.7.11/7.18）、FSE 2026（ddl在2025.9月）、ISSTA 2026（ddl在2025.10月底）、WWW 2026（ddl大约在2025.10月中旬）
 ```
 
 --------------------------
@@ -58,6 +56,8 @@ ISSTA 2026（ddl在2025.10月底）、WWW 2026（ddl大约在2025.10月中旬）
 
 3. **Status** (Waku Node，end-to-end encryption by X3dh, decentralized by Waku protocol)【done】
 
+   - [x] 手动构建获取部分的数据：
+
      ```python
      1. Waku采用的是noise协议进行密钥交换，Status采用X3DH协议保障端到端加密的安全，获取Waku网络的方式：运行以下命令：
      ./build/wakunode2 --rendezvous=false --dns-discovery=true --dns-discovery-url="enrtree://AIRVQ5DDA4FFWLRBCHJWUWOO6X6S4ZTZ5B667LQ6AJU6PEYDLRD5O@sandbox.waku.nodes.status.im" --discv5-discovery=true --discv5-enr-auto-update=true --relay-peer-exchange=true | tee waku.2025.03.12.log > /dev/null
@@ -93,13 +93,45 @@ ISSTA 2026（ddl在2025.10月底）、WWW 2026（ddl大约在2025.10月中旬）
 > 4. 采用python脚本，扫描opendht节点并保存：/home/ubuntu/work/opendht/python/tools: python3 schedule_scanner.py
 > ```
 >
-> [!IMPORTANT]
-
 >   ```python
-> 1. 用户规模（用户画像，行为分析，等）--测量
-> 2. 数据存储模式（策略）--测量
-> 3. 交互方式（communication的方式，寻址，群组交互，等）--测量
-> 4. 安全协议（端到端加密协议，等）--安全分析
-> 4. 不同decentralized messager存在的协议漏洞？
-> 4. 分别针对与Direct Messaging以及Group Messaging做安全分析？比如，对Matrix、Berty的Group和Direct协议进行分析
+> 数据列表：
+> 1. 地域性数据（city、region、country、经纬度），归属组织数据（org、asn、ISP、CIDR），hostname
+> 2. IP reputation数据（malicious、malicious_label、），IP communication数据（XXX），IP referrer files数据（popular_threat_classification、）
+> 3. Shodan数据（opened port、tags、domains、product、version、server host key algorithms，vulns）
+> 4. CVE数据（assignerShortName、problemTypes（CWE）、affected.vendor）
+> 
+> 
+> 测量TODO：
+> 0. 测量的目的是要围绕分析这几种不同的去中心化messagers之间的差异性和共性，包括测量和安全等方面；
+>   |-- 不同decentralized messagers之间的架构比较、探讨
+>   |-- 交互方式（communication的方式，寻址，群组交互，等）
+>   |-- 数据存储模式（策略）
+>   |-- 安全协议（端到端加密协议，等）、
+> 1. 物理与网络地理测量（部署性）：分析 IP 地址的地理分布，寻找特定地区的安全威胁模式。
+>   |-- ASN、ISP，是否集中在某些国家，是否依赖某个区域（如欧美服务器多，中国少）
+>   |-- 住宅/数据中心 IP：测量数据中心 IP 是否存在大量端口暴露情况。
+>   |-- VPN代理情况
+> 2. IP 关系网络分析（行为性）：利用图神经网络（GNN） 识别Node节点IP之间的关联性。
+>   |-- 相同 ASN 或国家的 IP 是否存在相似行为？相同 C2 服务器的 IP 是否共同执行攻击？
+>   |-- 构建通信或邻接图：IP归属同一ASN/国家、相似端口开放行为、是否连接相同的其他节点（共同邻居）
+> 3. 端口暴露情况测量（安全性、隐私性）：评估 IP 的开放端口情况，分析潜在的网络攻击风险，设备类型。
+>   |-- 默认凭证风险：Shodan 可能会显示某些设备仍然使用默认密码。
+>   |-- 某个 IP 段（CIDR）暴露大量 RDP 端口，可能被勒索软件攻击者利用。
+>   |-- 加密情况、P2P端口、是否使用 Tor、VPN、Proxy 等隐藏真实 IP（隐私性）
+> 4. CVE 漏洞影响测量（安全性、隐私性）：节点与漏洞对应情况、设备类型分析、影响产品、漏洞类型
+>   |-- 高危 CVE（CVSS 评分 > 8）
+>   |-- IP地址与CVE之间的对应，构建 CVE 传播模型，查看某个漏洞是否随着时间扩散到更多 IP
+> 5. 恶意活动测量（安全性、隐私性）：分析 IP 是否出现在威胁情报数据库中，并进行威胁分类。
+>   |-- Virustotal（恶意 IP）+ Shodan（端口、漏洞）构建 IP 关系图（GNN?）
+>   |-- Virustotal（恶意 IP）+ IPInfo构建 IP 地理关系图
+> 6. 协议安全分析
+>   |-- 不同decentralized messager存在的协议漏洞（共性、差异性）
+>   |- 分别针对与Direct Messaging以及Group Messaging做安全分析？比如，对Matrix、Berty的Group和Direct协议进行分析
+> 
+> 发现与启示TODO：
+> 1. 网络基础设施相关的见解：节点的地理与网络分布不均衡，大量节点托管在特定云服务商上
+> 2. 安全暴露与威胁相关的见解：节点暴露高危端口，存在多个存在 CVE 漏洞的节点，节点被 VirusTotal 标记为恶意（节点可能被滥用，或者属于攻击基础设施的一部分），
+> 3. 行为模式与图结构的洞察：节点之间存在可疑关联结构，某些节点行为与多数明显不同（PS：需对“离群节点”做进一步溯源分析，最好是能识别新型威胁手法）
+>   |-- Shodan Hostnames/Tags	Shodan，附加标签，最好是能够发现是否为honeypot、蜜罐、botnet
+> 
 >   ```
