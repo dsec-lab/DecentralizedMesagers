@@ -1,6 +1,7 @@
 > [!IMPORTANT]
 >
-> 针对去中心化的messager进行分析，进行一个全面的分析，并从多维度的角度分析。题目可为：《不同decentralized messagers的测量与安全分析》
+> Perform an in-depth analysis of decentralized messaging platforms from multiple dimensions, including architecture, performance, and security.
+> A Comprehensive Measurement and Security Analysis of Decentralized Messaging Platforms
 
 ```python
 1. 针对不同decentralized messagers，分析其不同结构、原理；
