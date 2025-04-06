@@ -21,7 +21,7 @@
 
 --------------------------
 
-1. **Matrix** (Olm Protocol, 参考Signal Double ratchet协议) 
+1. **Matrix** (Olm Protocol, 参考Signal Double ratchet协议) 【done】
 
    ```python
    1. 端到端加密协议与Signal双棘轮协议有相似之处，Megolm协议的分析是我们之前所未做的
@@ -73,16 +73,7 @@
      https://fleets.status.im/
      ```
 
-4. [Tox](https://github.com/TokTok/c-toxcore)（目前方案暂定获取开源数据-数据量小）【done】
-
-
-> ```python
-> 1. 官方文档：https://toktok.ltd/spec；tox nodes：https://nodes.tox.chat/json；The Tox Reference：https://zetok.github.io/tox-spec/；
-> 2. 采用libsodium进行加密和认证
-> 3. 安装Tox node：https://wiki.tox.chat/users/nodes；https://wiki.tox.chat/users/runningnodes
-> ```
-
-5. [Jami](https://jami.net/zh/)（opendht）【done】
+4. [Jami](https://jami.net/zh/)（opendht）【done】
 
 
 > ```python
@@ -91,6 +82,15 @@
 > 2. https://docs.jami.net/en_US/user/lan-only.html#bootstrapping
 > 3. cd /home/ubuntu/download/opendht/build, and run the binary command
 > 4. 采用python脚本，扫描opendht节点并保存：/home/ubuntu/work/opendht/python/tools: python3 schedule_scanner.py
+> ```
+
+5. [Tox](https://github.com/TokTok/c-toxcore)（目前方案暂定获取开源数据-数据量小）【done】
+
+
+> ```python
+> 1. 官方文档：https://toktok.ltd/spec；tox nodes：https://nodes.tox.chat/json；The Tox Reference：https://zetok.github.io/tox-spec/；
+> 2. 采用libsodium进行加密和认证
+> 3. 安装Tox node：https://wiki.tox.chat/users/nodes；https://wiki.tox.chat/users/runningnodes
 > ```
 >
 >   ```python
