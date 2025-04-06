@@ -1,7 +1,7 @@
 > [!IMPORTANT]
 >
 > Perform an in-depth analysis of decentralized messaging platforms from multiple dimensions, including architecture, performance, and security.
-> A Comprehensive Measurement and Security Analysis of Decentralized Messaging Platforms
+> A Comprehensive Measurement and Security Analysis of Decentralized Messaging Platforms.
 
 ```python
 1. 针对不同decentralized messagers，分析其不同结构、原理；
@@ -10,9 +10,9 @@
    c. WHOIS，词云，
    d. 数据获取程序，撰写可以并行执行任务的程序，包装成一个通用性的数据获取框架
 
-2. 根据不同decentralized messagers的架构，提出一种通用的爬虫方法，获取不同messagers的生态数据，分别展开大规模测量；
+2. Based on the architectures of various decentralized messengers, a unified crawling approach is proposed to collect ecological data from each platform and conduct large-scale measurements accordingly.
 
-3. 针对不同decentralized encrytion protocols，提出一套具有comprehensive的formal analysis method，分别展开安全协议分析（并提出相关的mitigations？）
+3. A comprehensive formal analysis approach is proposed to evaluate the security of various decentralized encryption protocols, identifying potential vulnerabilities and recommending corresponding mitigation strategies.
 
 4. 5个典型（多数与Signal有很深的渊源）：Matrix, Berty, Status, Atox，Jami
 
