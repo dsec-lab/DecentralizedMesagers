@@ -1,7 +1,7 @@
 > [!IMPORTANT]
 >
 > Perform an in-depth analysis of decentralized messaging platforms from multiple dimensions, including architecture, performance, and security.
-> A Comprehensive Measurement and Security Analysis of Decentralized Messaging Platforms.
+> "Unveiling the Decentralized Messaging Landscape: A Large-Scale Measurement and Security Perspective".
 
 ```python
 1. 针对不同decentralized messagers，分析其不同结构、原理；
