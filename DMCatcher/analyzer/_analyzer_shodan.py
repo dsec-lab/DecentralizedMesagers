@@ -16,6 +16,7 @@ logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(name)s %(levelname)s %(message)s",
                     datefmt='%Y-%m-%d  %H:%M:%S %a')
 
+cves_file_dir = r'D:\科研数据\DecentralizedMessagers\DataNeedToAnalysis\cve.circl.lu-response'
 
 class ShodanAnalyzer(object):
     def __init__(self):
@@ -57,6 +58,11 @@ class ShodanAnalyzer(object):
             hostnames = shodan_response['hostnames']
             if len(hostnames) > 0:
                 self.hostnames.extend(hostnames)
+            if 'vulns' in shodan_response.keys():
+                vulns = shodan_response['vulns']
+                self.vulns.extend(vulns)
+                if 'CVE-2023-44487' in vulns:
+                    pass
 
             data = shodan_response['data']
             for idx, item in enumerate(data):
@@ -95,9 +101,57 @@ class ShodanAnalyzer(object):
                     cloud = item['cloud']
                     provider = cloud['provider']
                     self.cloud_provider.append(provider)
-            if 'vulns' in shodan_response.keys():
-                vulns = shodan_response['vulns']
-                self.vulns.extend(vulns)
+
+    def cve_analyzer(self):
+        print("Vulns: ", len(Counter(self.vulns)), Counter(self.vulns).most_common(10))
+        top_vulns_list = [vuln for vuln, count in Counter(self.vulns).most_common(10)]
+        for file_name in os.listdir(cves_file_dir):
+            if file_name.endswith('.json'):
+                cve_name = file_name.split('.json')[0]
+                if cve_name in top_vulns_list:
+                    print(cve_name)
+
+                with open(os.path.join(cves_file_dir, file_name), 'r', encoding='utf-8') as f:
+                    cve_data_dict = json.load(f)
+                    cveMetadata = cve_data_dict['cveMetadata']
+                    containers = cve_data_dict['containers']
+                    containers_adp = containers['adp']
+                    containers_cna = containers['cna']
+                    cna_keys = list(containers_cna.keys())
+                    # print(cna_keys)
+                    descriptions = containers_cna['descriptions']
+                    affected = containers_cna['affected']
+                    for affect_item in affected:
+                        # print(affect_item.keys())
+                        if 'vendor' in affect_item.keys():
+                            affected_vendor = affect_item['vendor']
+                        if 'product' in affect_item.keys():
+                            affected_product = affect_item['product']
+                        if 'defaultStatus' in affect_item.keys():
+                            defaultStatus = affect_item['defaultStatus']
+                        if 'packageName' in affect_item.keys():
+                            packageName = affect_item['packageName']
+                    providerMetadata = containers_cna['providerMetadata']
+                    # print(providerMetadata)
+                    if 'problemTypes' in cna_keys:
+                        problemTypes = containers_cna['problemTypes']
+                        for problemType in problemTypes:
+                            for description in problemType['descriptions']:
+                                if 'cweId' in description.keys():
+                                    cweId = description['cweId']
+                                    cwe_description = description['description']
+                                    # print(cweId, cwe_description)
+                    if 'metrics' in cna_keys:
+                        metrics = containers_cna['metrics']
+                        for item in metrics:
+                            if 'cvssV3_1' in item.keys():
+                                cvssV3_1 = item['cvssV3_1']
+                    if 'workarounds' in cna_keys:
+                        workarounds = containers_cna['workarounds']
+                    if 'x_legacyV4Record' in cna_keys:
+                        x_legacyV4Record = containers_cna['x_legacyV4Record']
+                        CVE_data_meta = x_legacyV4Record['CVE_data_meta']
+                        ASSIGNER = CVE_data_meta['ASSIGNER']
 
     def print_info(self):
         print("Opened ports: ", len(Counter(self.opened_ports)), Counter(self.opened_ports).most_common(10))
@@ -111,7 +165,8 @@ class ShodanAnalyzer(object):
         print("ssl_sig_alg: ", len(Counter(self.ssl_sig_alg)), Counter(self.ssl_sig_alg).most_common(10))
         print("cloud_provider: ", len(Counter(self.cloud_provider)), Counter(self.cloud_provider).most_common(10))
         print()
-        print("Vulns: ", len(Counter(self.vulns)), Counter(self.vulns).most_common(10))
+        self.cve_analyzer()
+        print()
 
 
 if __name__ == '__main__':
@@ -136,7 +191,7 @@ if __name__ == '__main__':
         if file_name.endswith('.json'):
             ip = file_name[:-5]
             # select a messager: Matrix, Berty, Jami, Status
-            if ip not in _list_berty_ips_: continue
+            if ip not in _list_status_ips_: continue
 
             shodan_file_path = os.path.join(shodan_data_dir, file_name)
             try:
