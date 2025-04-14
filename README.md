@@ -125,9 +125,12 @@
 > 5. 恶意活动测量（安全性、隐私性）：分析 IP 是否出现在威胁情报数据库中，并进行威胁分类。
 >   |-- Virustotal（恶意 IP）+ Shodan（端口、漏洞）构建 IP 关系图（GNN?）
 >   |-- Virustotal（恶意 IP）+ IPInfo构建 IP 地理关系图
+>   |-- 假设我们认为VT针对IP进行了打标签（正常、恶意）。是否可以利用这些节点的多方位特征信息（位置信息、开放端口、ISP、Shodan信息、暴露的vulns、加密算法、支持的 TLS/加密协议版本、认证方式、是否开放注册、认证算法、关联products、tag、等信息）构建GNN，通过已构建的GNN模型识别（训练集、测试集、验证集）。
+>   |-- 甚至可以通过迁移学习的技术，在比如利用Matrix的数据进行训练，测试Berty网络的安全行，符合interoperability。
 > 6. 协议安全分析
 >   |-- 不同decentralized messager存在的协议漏洞（共性、差异性）
->   |- 分别针对与Direct Messaging以及Group Messaging做安全分析？比如，对Matrix、Berty的Group和Direct协议进行分析
+>   |-- 分别针对与Direct Messaging以及Group Messaging做安全分析？比如，对Matrix、Berty的Group和Direct协议进行分析
+>   |-- 提出防御策略
 > 
 > 发现与启示TODO：
 > 1. 网络基础设施相关的见解：节点的地理与网络分布不均衡，大量节点托管在特定云服务商上
