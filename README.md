@@ -65,12 +65,12 @@
      再通过sudo tcpdump -i eth0 udp port 9000 | tee waku.2025.03.12.txt > /dev/null获取交互的IP或者DNS。
      
      2. 其他连接：
-     https://status.app/specs/status-1to1-chat；https://rfc.vac.dev/waku/standards/application/53/x3dh/
-     https://zealous-polka-dc7.notion.site/Building-ca1db4fb3baf4f15bab8da717832b743
-     https://github.com/status-im/status-go/blob/develop/_docs/how-to-build.md
-     https://github.com/status-im/status-go/tree/develop/cmd/status-cli
-     https://github.com/status-im/status-go/tree/develop/cmd/status-backend
-     https://waku-org.github.io/waku-rest-api/
+     https://status.app/specs/status-1to1-chat；https://rfc.vac.dev/waku/standards/application/53/x3dh/；https://github.com/waku-org/specs/blob/master/standards/application/noise.md
+     ### 可能存在漏洞的点：https://specs.status.im/spec/2#x3dh-prekey-bundles
+     Status 不会发布一次性密钥 OPK 或执行包含它们的 DH，因为 Status 实现中没有中央服务器。
+     客户端应该每 24 小时重新生成一个新的 X3DH 预密钥包。这可以采用惰性方式进行，即如果客户端在此时间段后仍未上线，则不会重新生成或广播密钥包。当前捆绑包应间歇性地在特定于其身份密钥 {IK}-contact-code 的 Whisper/Waku 主题上广播。此操作可以每 6 小时进行一次。
+
+     威胁模型：https://rfc.vac.dev/waku/standards/core/11/relay#adversarial-model
      https://fleets.status.im/
      ```
 
@@ -137,5 +137,7 @@
 > 2. 安全暴露与威胁相关的见解：节点暴露高危端口，存在多个存在 CVE 漏洞的节点，节点被 VirusTotal 标记为恶意（节点可能被滥用，或者属于攻击基础设施的一部分），
 > 3. 行为模式与图结构的洞察：节点之间存在可疑关联结构，某些节点行为与多数明显不同（PS：需对“离群节点”做进一步溯源分析，最好是能识别新型威胁手法）
 >   |-- Shodan Hostnames/Tags	Shodan，附加标签，最好是能够发现是否为honeypot、蜜罐、botnet
-> 4. 不同协议的安全性分析
+> 4. 不同协议的安全性分析（端到端加密、多设备、群聊天）
+  |-- Matrix提出的Olm协议（实际是对Signal的改进）；Berty提出的Wesh协议；Status对X3DH和Double Ratchet协议的删减
+  |-- 密钥生成/派生协议、Handshake协议分析、消息端到端加密协议分析
 >   ```
