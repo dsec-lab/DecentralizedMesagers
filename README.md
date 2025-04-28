@@ -45,34 +45,32 @@
 
 2. **Berty** （Wesh Protocol）【done】
 
-   ```python
-      1. 获取方式：通过"berty peers"命令可以获取不同节点的IP地址，但是其他的用户信息却难以获取
-      有CLI版本，可以通过该模式获取数据：https://github.com/berty/berty/tree/master/go
-      Wesh协议安全分析（文档、Git Repos）：Wesh协议的重要角色以及安全协议流程；利用Proverif对构建的不同协议进行formal analysis
-   
-      2. 其他信息：
-      https://berty.tech/docs/protocol/
-      加密部分参考Signal Symmetric-key ratchet协议；但Joining a Group提出了新的机制，包括：innovation，exchanging messages
-   ```
+```python
+1. 获取方式：通过"berty peers"命令可以获取不同节点的IP地址，但是其他的用户信息却难以获取
+有CLI版本，可以通过该模式获取数据：https://github.com/berty/berty/tree/master/go
+Wesh协议安全分析（文档、Git Repos）：Wesh协议的重要角色以及安全协议流程；利用Proverif对构建的不同协议进行formal analysis
+
+2. 其他信息：
+https://berty.tech/docs/protocol/
+加密部分参考Signal Symmetric-key ratchet协议；但Joining a Group提出了新的机制，包括：innovation，exchanging messages
+```
 
 3. **Status** (Waku Node，end-to-end encryption by X3dh, decentralized by Waku protocol)【done】
 
-   - [x] 手动构建获取部分的数据：
+```python
+1. Waku采用的是noise协议进行密钥交换，Status采用X3DH协议保障端到端加密的安全，获取Waku网络的方式：运行以下命令：
+./build/wakunode2 --rendezvous=false --dns-discovery=true --dns-discovery-url="enrtree://AIRVQ5DDA4FFWLRBCHJWUWOO6X6S4ZTZ5B667LQ6AJU6PEYDLRD5O@sandbox.waku.nodes.status.im" --discv5-discovery=true --discv5-enr-auto-update=true --relay-peer-exchange=true | tee waku.2025.03.12.log > /dev/null
+再通过sudo tcpdump -i eth0 udp port 9000 | tee waku.2025.03.12.txt > /dev/null获取交互的IP或者DNS。
 
-     ```python
-     1. Waku采用的是noise协议进行密钥交换，Status采用X3DH协议保障端到端加密的安全，获取Waku网络的方式：运行以下命令：
-     ./build/wakunode2 --rendezvous=false --dns-discovery=true --dns-discovery-url="enrtree://AIRVQ5DDA4FFWLRBCHJWUWOO6X6S4ZTZ5B667LQ6AJU6PEYDLRD5O@sandbox.waku.nodes.status.im" --discv5-discovery=true --discv5-enr-auto-update=true --relay-peer-exchange=true | tee waku.2025.03.12.log > /dev/null
-     再通过sudo tcpdump -i eth0 udp port 9000 | tee waku.2025.03.12.txt > /dev/null获取交互的IP或者DNS。
-     
-     2. 其他连接：
-     https://status.app/specs/status-1to1-chat；https://rfc.vac.dev/waku/standards/application/53/x3dh/；https://github.com/waku-org/specs/blob/master/standards/application/noise.md
-     ### 可能存在漏洞的点：https://specs.status.im/spec/2#x3dh-prekey-bundles
-     Status 不会发布一次性密钥 OPK 或执行包含它们的 DH，因为 Status 实现中没有中央服务器。
-     客户端应该每 24 小时重新生成一个新的 X3DH 预密钥包。这可以采用惰性方式进行，即如果客户端在此时间段后仍未上线，则不会重新生成或广播密钥包。当前捆绑包应间歇性地在特定于其身份密钥 {IK}-contact-code 的 Whisper/Waku 主题上广播。此操作可以每 6 小时进行一次。
+2. 其他连接：
+https://status.app/specs/status-1to1-chat；https://rfc.vac.dev/waku/standards/application/53/x3dh/；https://github.com/waku-org/specs/blob/master/standards/application/noise.md
+### 可能存在漏洞的点：https://specs.status.im/spec/2#x3dh-prekey-bundles
+Status 不会发布一次性密钥 OPK 或执行包含它们的 DH，因为 Status 实现中没有中央服务器。
+客户端应该每 24 小时重新生成一个新的 X3DH 预密钥包。这可以采用惰性方式进行，即如果客户端在此时间段后仍未上线，则不会重新生成或广播密钥包。当前捆绑包应间歇性地在特定于其身份密钥 {IK}-contact-code 的 Whisper/Waku 主题上广播。此操作可以每 6 小时进行一次。
 
-     威胁模型：https://rfc.vac.dev/waku/standards/core/11/relay#adversarial-model
-     https://fleets.status.im/
-     ```
+威胁模型：https://rfc.vac.dev/waku/standards/core/11/relay#adversarial-model
+https://fleets.status.im/
+```
 
 4. [Jami](https://jami.net/zh/)（opendht）【done】
 
