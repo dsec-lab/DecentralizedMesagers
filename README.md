@@ -129,7 +129,7 @@ https://fleets.status.im/
 >   |-- 不同decentralized messager存在的协议漏洞（共性、差异性）
 >   |-- 分别针对与Direct Messaging以及Group Messaging做安全分析？比如，对Matrix、Berty的Group和Direct协议进行分析
 >   |-- 提出防御策略
-> 7. 多设备安全分析（未来研究工作）
+> 7. 多设备安全分析、群聊天的安全（未来研究工作）
 > 
 > 发现与启示TODO：
 > 1. 网络基础设施相关的见解：节点的地理与网络分布不均衡，大量节点托管在特定云服务商上
