@@ -137,6 +137,6 @@ https://fleets.status.im/
 > 3. 行为模式与图结构的洞察：节点之间存在可疑关联结构，某些节点行为与多数明显不同（PS：需对“离群节点”做进一步溯源分析，最好是能识别新型威胁手法）
 >   |-- Shodan Hostnames/Tags	Shodan，附加标签，最好是能够发现是否为honeypot、蜜罐、botnet
 > 4. 不同协议的安全性分析（端到端加密、多设备、群聊天）
-  |-- Matrix提出的Olm协议（实际是对Signal的改进）；Berty提出的Wesh协议；Status对X3DH和Double Ratchet协议的删减
-  |-- 密钥生成/派生协议、Handshake协议分析、消息端到端加密协议分析
+    |-- Matrix提出的Olm协议（实际是对Signal的改进）；Berty提出的Wesh协议；Status对X3DH和Double Ratchet协议的删减
+    |-- 密钥生成/派生协议、Handshake协议分析、消息端到端加密协议分析
 >   ```
