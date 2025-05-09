@@ -47,12 +47,15 @@
 
 ```python
 1. 获取方式：通过"berty peers"命令可以获取不同节点的IP地址，但是其他的用户信息却难以获取
-有CLI版本，可以通过该模式获取数据：https://github.com/berty/berty/tree/master/go
-Wesh协议安全分析（文档、Git Repos）：Wesh协议的重要角色以及安全协议流程；利用Proverif对构建的不同协议进行formal analysis
+ 有CLI版本，可以通过该模式获取数据：https://github.com/berty/berty/tree/master/go
+ Wesh协议安全分析（文档、Git Repos）：Wesh协议的重要角色以及安全协议流程；利用Proverif对构建的不同协议进行formal analysis
 
-2. 其他信息：
-https://berty.tech/docs/protocol/
-加密部分参考Signal Symmetric-key ratchet协议；但Joining a Group提出了新的机制，包括：innovation，exchanging messages
+2. 其他信息：https://berty.tech/docs/protocol/
+ 加密部分参考Signal Symmetric-key ratchet协议；但Joining a Group提出了新的机制，包括：innovation，exchanging messages
+
+3. Handshake协议(inspired by Scuttlebutt’s Capability-based Handshake，重点)、端到端加密协议(Symmetric-key ratchet协议，存在漏洞：如果攻击者窃取了一方的发送和接收链密钥，攻击者就可以计算所有未来的消息密钥并解密所有未来的消息)
+
+4. Rendezvous点机制实现P2P发现(是由某一实体所控制的，是否能够发起中间人攻击)；Linking Devices（URL、QRCode）；只有Symmetric-key ratchet协议，无Diffie-Hellman ratchet协议（存在的不足可以给Berty官方(hello@berty.tech)发邮件披露）；发送链和接收链的 KDF 输入是恒定的，因此这些链不提供入侵恢复功能。
 ```
 
 3. **Status** (Waku Node，end-to-end encryption by X3dh, decentralized by Waku protocol)【done】
