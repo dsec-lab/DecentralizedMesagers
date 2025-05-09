@@ -43,7 +43,7 @@
    e) homeserver域名转IP地址：https://federationtester.matrix.org/
    ```
 
-2. **Berty** （Wesh Protocol）【done】
+2. **Berty** （IPFS，Wesh Protocol：https://berty.tech/docs/protocol）【done】
 
 ```python
 1. 获取方式：通过"berty peers"命令可以获取不同节点的IP地址，但是其他的用户信息却难以获取
