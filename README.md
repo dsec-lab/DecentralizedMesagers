@@ -66,13 +66,20 @@
 再通过sudo tcpdump -i eth0 udp port 9000 | tee waku.2025.03.12.txt > /dev/null获取交互的IP或者DNS。
 
 2. 其他连接：
-https://status.app/specs/status-1to1-chat；https://rfc.vac.dev/waku/standards/application/53/x3dh/；https://github.com/waku-org/specs/blob/master/standards/application/noise.md
+[https://status.app/specs/status-1to1-chat；https://rfc.vac.dev/waku/standards/application/53/x3dh/；https://github.com/waku-org/specs/blob/master/standards/application/noise.md
 ### 可能存在漏洞的点：https://specs.status.im/spec/2#x3dh-prekey-bundles
 Status 不会发布一次性密钥 OPK 或执行包含它们的 DH，因为 Status 实现中没有中央服务器。
 客户端应该每 24 小时重新生成一个新的 X3DH 预密钥包。这可以采用惰性方式进行，即如果客户端在此时间段后仍未上线，则不会重新生成或广播密钥包。当前捆绑包应间歇性地在特定于其身份密钥 {IK}-contact-code 的 Whisper/Waku 主题上广播。此操作可以每 6 小时进行一次。
 
 威胁模型：https://rfc.vac.dev/waku/standards/core/11/relay#adversarial-model
-https://fleets.status.im/
+https://fleets.status.im/](https://status.app/specs/status-1to1-chat；https://rfc.vac.dev/waku/standards/application/53/x3dh/
+https://specs.status.im/spec/2;https://specs.status.im/spec/5
+### 可能存在漏洞的点：https://specs.status.im/spec/2#x3dh-prekey-bundles
+## Status 不会发布一次性密钥 OPK 或执行包含它们的 DH，因为 Status 实现中没有中央服务器。##
+客户端应该每 24 小时重新生成一个新的 X3DH 预密钥包。这可以采用惰性方式进行，即如果客户端在此时间段后仍未上线，则不会重新生成或广播密钥包。当前捆绑包应间歇性地在特定于其身份密钥 {IK}-contact-code 的 Whisper/Waku 主题上广播。此操作可以每 6 小时进行一次。
+威胁模型：https://rfc.vac.dev/waku/standards/core/11/relay#adversarial-model)
+
+3. Handshake协议（X3DH，无一次性密钥）、端到端加密协议（Double Ratchet协议的删减）
 ```
 
 4. [Jami](https://jami.net/zh/)（opendht）【done】
