@@ -52,11 +52,10 @@ set nounifIgnoreNtimes = 10000.
 
 (* -------------- Handshake Phase ----------------- *)
 
-(* 1st step Events - Requester Hello *)
+(* 1st step - Requester sends: ephemeral key a *)
 event evRequesterHelloSendKey(publicKey).
 event evResponderHelloReceiveKey(publicKey).
 
-(* 1st step - Requester sends: ephemeral key a *)
 let step1clientA(skey_A_I: privateKey) =
 (	
 	new skey_A_E: privateKey;
@@ -83,13 +82,12 @@ let step1clientB() =
 	insert step1_table_responder(pk_A_E)
 ).
 
-(* 2nd step Events - Responder Hello *)
+(* 2nd step - Requester receives: ephemeral key b *)
 event evResponderHelloSendKey(publicKey).
 event evRequesterReceiveKey(publicKey).
 event evResponderCalcShareSecret(sharedKey, sharedKey).
 event evRequesterCalcShareSecret(sharedKey, sharedKey).
 
-(* 2nd step - Requester receives: ephemeral key b *)
 let step2clientB(skey_B_I: privateKey) = 
 (
 	get step1_table_responder(pk_A_E) in 
@@ -132,7 +130,7 @@ let step2clientA() =
 	insert step2_table_requester(G2sharedKey(ecdhkey_ab_Requester), G2sharedKey(ecdhkey_aB_Requester), pk_A_I, skey_A_I, pk_B_I)
 ).
 
-(* 3rd step Events - Requester Authenticate *)
+(* 3rd step - Requester sends: box[a.b|a.B](A,sig[A](a.b)) *)
 event evRequesterSealPublicKey(publicKey).
 event evResponderCalcPublicKey(publicKey).
 event evRequesterSendboxKey(boxKey).
@@ -141,11 +139,8 @@ event evResponderSendboxKey(boxKey).
 event evResponderReceiveboxKey(boxKey).
 event evRequesterAuthenticateCalcSharedKey(sharedKey).
 event evResponderAuthenticateCalcSharedKey(sharedKey).
-
-(* 4th step Events - Responder Accept *)
 event evRequesterAcceptBoxSharedKey(sharedKey).
 
-(* 3rd step - Requester sends: box[a.b|a.B](A,sig[A](a.b)) *)
 let step3clientA() =
 (
 	get  step2_table_requester(ecdhkey_ab_Requester, ecdhkey_aB_Requester, pk_A_I, skey_A_I, pk_B_I) in 
@@ -195,9 +190,7 @@ type chainKey.
 type msgKey.
 type number.
 type nonce.
-
 table step6_table_requester(chainKey).
-
 const counter: number.
 
 (* Client send sensitive data *)
@@ -217,13 +210,12 @@ fun secretBoxSeal(bitstring, nonce, msgKey): bitstring.
 fun secretBoxOpen(bitstring, nonce, msgKey): bitstring.
 fun uint64AsNonce(number): nonce.
 
-(* Encryption Phase Events *)
+(* 5th step - Requester encrypt plaintext and send ciphertext *)
 event evRequesterSendcipherText(bitstring).
 event evResponderReceiveCipherText(bitstring).
 event evResponderSendCipherText(bitstring).
 event evRequesterReceiveCipherText(bitstring).
 
-(* 5th step - Requester encrypt plaintext and send ciphertext *)
 let step5clientA() =
 (
 	get step3_table_requester(ecdhkey_AB_Requester) in
