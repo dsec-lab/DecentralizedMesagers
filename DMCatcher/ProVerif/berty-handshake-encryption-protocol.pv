@@ -1,0 +1,297 @@
+(* ProVerif code of handshake-then-encryption protocol of Berty *)
+
+(* E: Ephemeral, I:  Identity*)
+(* open channel for data communication between client and rendezvous point *)
+free ch_c2s: channel.
+free ch_s2c: channel.
+free ch_c2c: channel.
+
+const OK: bitstring.
+
+(* type defination *)
+type publicKey.
+type privateKey.
+type sharedKey.
+fun pk(privateKey): publicKey.
+type boxKey.
+
+(* tables used to pass data between steps *)
+table step1_table_requester(privateKey, privateKey).
+table step1_table_responder(publicKey).
+table step2_table_requester(sharedKey, sharedKey, publicKey, privateKey, publicKey).
+table step2_table_responder(sharedKey, sharedKey, privateKey).
+table step3_table_requester(sharedKey).
+table step3_table_responder(sharedKey, sharedKey, privateKey).
+table step6_table_responder(sharedKey).
+
+(* Elliptic Curve Diffie–Hellman Key Exchange. https://cryptobook.nakov.com/asymmetric-key-ciphers/ecdh-key-exchange *)
+type G.
+type scalar.
+type basis.
+const P:G [data].
+fun sca(scalar, G): G.
+equation forall x:scalar, y:scalar; sca(x, sca(y, P))= sca(y, sca(x, P)).
+
+(* type conversion functions *)
+fun privateKey2scalar(privateKey): scalar [typeConverter].
+fun publicKey2G(publicKey): G [typeConverter].
+fun G2sharedKey(G): sharedKey [typeConverter].
+
+
+letfun calc_ecdhkey(sk:privateKey, pk:publicKey) = sca(privateKey2scalar(sk), publicKey2G(pk)).
+fun sign(privateKey, sharedKey): bitstring.
+fun unsign(bitstring, publicKey): bitstring.
+fun boxSeal(sharedKey, sharedKey, publicKey, bitstring): boxKey.
+fun boxSealResponder(sharedKey, sharedKey, bitstring): boxKey.
+fun unboxSeal(sharedKey, sharedKey, boxKey): publicKey.
+fun unboxSealRequester(sharedKey, sharedKey, boxKey): bitstring.
+
+
+set simplifyProcess = true.
+set nounifIgnoreNtimes = 10000.
+
+(* -------------- Handshake Phase ----------------- *)
+
+(* 1st step Events - Requester Hello *)
+event evRequesterHelloSendKey(publicKey).
+event evResponderHelloReceiveKey(publicKey).
+
+(* 1st step - Requester sends: ephemeral key a *)
+let step1clientA(skey_A_I: privateKey) =
+(	
+	new skey_A_E: privateKey;
+	(* Identity and Ephemeral keys *)
+	let pk_A_I = pk(skey_A_I) in
+	let pk_A_E = pk(skey_A_E) in
+	
+	event evRequesterHelloSendKey(pk_A_E);
+
+	out(ch_c2s, pk_A_E);
+	insert step1_table_requester(skey_A_I, skey_A_E)
+).
+let step1RendezvousPoint() =
+(
+	in(ch_c2s, pk_A_E: publicKey);
+	out(ch_s2c, pk_A_E)
+).
+let step1clientB() =
+(
+	in(ch_s2c, pk_A_E: publicKey);
+
+	event evResponderHelloReceiveKey(pk_A_E);
+
+	insert step1_table_responder(pk_A_E)
+).
+
+(* 2nd step Events - Responder Hello *)
+event evResponderHelloSendKey(publicKey).
+event evRequesterReceiveKey(publicKey).
+event evResponderCalcShareSecret(sharedKey, sharedKey).
+event evRequesterCalcShareSecret(sharedKey, sharedKey).
+
+(* 2nd step - Requester receives: ephemeral key b *)
+let step2clientB(skey_B_I: privateKey) = 
+(
+	get step1_table_responder(pk_A_E) in 
+	new skey_B_E: privateKey;
+	(* Identity and Ephemeral keys *)
+	let pk_B_I = pk(skey_B_I) in
+	let pk_B_E = pk(skey_B_E) in
+	
+	event evResponderHelloSendKey(pk_B_E);
+	
+	out(ch_c2s, (pk_B_I, pk_B_E));
+	
+	(* compute two shared secrets denoted a.b  and a.B *)
+	let ecdhkey_ab_Responder = calc_ecdhkey(skey_B_E, pk_A_E) in
+	let ecdhkey_aB_Responder = calc_ecdhkey(skey_B_I, pk_A_E) in
+
+	event evResponderCalcShareSecret(G2sharedKey(ecdhkey_ab_Responder), G2sharedKey(ecdhkey_aB_Responder));
+	insert step2_table_responder(G2sharedKey(ecdhkey_ab_Responder), G2sharedKey(ecdhkey_aB_Responder), skey_B_I)
+	
+).
+let step2RendezvousPoint() =
+(
+	in(ch_c2s, (pk_B_I: publicKey, pk_B_E: publicKey));
+	out(ch_s2c, (pk_B_I, pk_B_E))
+).
+let step2clientA() =
+(
+	get step1_table_requester(skey_A_I, skey_A_E) in 
+	in(ch_s2c, (pk_B_I: publicKey, pk_B_E: publicKey));
+	event evResponderHelloReceiveKey(pk_B_I);
+	event evResponderHelloReceiveKey(pk_B_E);
+	
+	(*  compute two shared secrets denoted a.b  and a.B *)
+	let ecdhkey_ab_Requester = calc_ecdhkey(skey_A_E, pk_B_E) in
+	let ecdhkey_aB_Requester = calc_ecdhkey(skey_A_E, pk_B_I) in
+	
+	event evRequesterCalcShareSecret(G2sharedKey(ecdhkey_ab_Requester), G2sharedKey(ecdhkey_aB_Requester));
+	
+	let pk_A_I = pk(skey_A_I) in
+	insert step2_table_requester(G2sharedKey(ecdhkey_ab_Requester), G2sharedKey(ecdhkey_aB_Requester), pk_A_I, skey_A_I, pk_B_I)
+).
+
+(* 3rd step Events - Requester Authenticate *)
+event evRequesterSealPublicKey(publicKey).
+event evResponderCalcPublicKey(publicKey).
+event evRequesterSendboxKey(boxKey).
+event evRequesterReceiveboxKey(boxKey).
+event evResponderSendboxKey(boxKey).
+event evResponderReceiveboxKey(boxKey).
+event evRequesterAuthenticateCalcSharedKey(sharedKey).
+event evResponderAuthenticateCalcSharedKey(sharedKey).
+
+(* 4th step Events - Responder Accept *)
+event evRequesterAcceptBoxSharedKey(sharedKey).
+
+(* 3rd step - Requester sends: box[a.b|a.B](A,sig[A](a.b)) *)
+let step3clientA() =
+(
+	get  step2_table_requester(ecdhkey_ab_Requester, ecdhkey_aB_Requester, pk_A_I, skey_A_I, pk_B_I) in 
+	let boxKeyRequester = boxSeal(ecdhkey_ab_Requester, ecdhkey_aB_Requester, pk_A_I, sign(skey_A_I, ecdhkey_ab_Requester)) in 
+	event evRequesterSealPublicKey(pk_A_I);
+	out(ch_c2c, boxKeyRequester);
+	event evRequesterSendboxKey(boxKeyRequester);
+
+	let ecdhkey_AB_Requester = calc_ecdhkey(skey_A_I, pk_B_I) in
+	event evRequesterAuthenticateCalcSharedKey(G2sharedKey(ecdhkey_AB_Requester));
+
+	insert step3_table_requester(G2sharedKey(ecdhkey_AB_Requester));
+
+	(* 4th step - Requester receives: box[a.b|A.B](sig[B](a.b)) *)
+	in(ch_c2c, boxKeyResponder: boxKey);
+	let signKeyResponder = unboxSealRequester(ecdhkey_ab_Requester, G2sharedKey(ecdhkey_AB_Requester), boxKeyResponder) in
+	event evRequesterReceiveboxKey(boxKeyResponder);
+	let ecdhkey_ab_Responder = unsign(signKeyResponder, pk_B_I) in 
+	(* ecdhkey_ab_Responder ==  ecdhkey_ab_Requester?*)
+	out(ch_c2c, OK)
+
+).
+let step3clientB() =
+(
+	get step2_table_responder(ecdhkey_ab_Responder, ecdhkey_aB_Responder, skey_B_I) in 
+	in(ch_c2c, boxKeyRequester: boxKey);
+	let pk_A_I = unboxSeal(ecdhkey_ab_Responder, ecdhkey_aB_Responder, boxKeyRequester) in
+	event evResponderCalcPublicKey(pk_A_I);
+
+	let ecdhkey_AB_Responder = calc_ecdhkey(skey_B_I, pk_A_I) in
+	event evResponderAuthenticateCalcSharedKey(G2sharedKey(ecdhkey_AB_Responder));
+
+	insert step3_table_responder(ecdhkey_ab_Responder, G2sharedKey(ecdhkey_AB_Responder), skey_B_I);
+	insert step6_table_responder(G2sharedKey(ecdhkey_AB_Responder));
+
+	(* 4th step - Requester receives: box[a.b|A.B](sig[B](a.b)) *)
+	let boxKeyResponder = boxSealResponder(ecdhkey_ab_Responder, G2sharedKey(ecdhkey_AB_Responder), sign(skey_B_I, ecdhkey_ab_Responder)) in 
+	out(ch_c2c, boxKeyResponder);
+	event evResponderSendboxKey(boxKeyResponder);
+
+	in(ch_c2c, OK: bitstring)
+).
+
+
+(* -------------- Encryption Phase ----------------- *)
+type chainKey.
+type msgKey.
+type number.
+type nonce.
+
+table step6_table_requester(chainKey).
+
+const counter: number.
+
+(* Client send sensitive data *)
+free plainTextRequester: bitstring [private].
+free plainTextResponder: bitstring [private].
+
+fun sharedKey2chainKey(sharedKey): chainKey [typeConverter].
+
+fun fist256bit(bitstring): chainKey.
+fun next256bit(bitstring): msgKey.
+fun HKDF(chainKey, nonce): bitstring.
+letfun deriveNextKeys(CK: chainKey, NONCE: nonce) = 
+let OKM = HKDF(CK, NONCE) in (fist256bit(OKM), next256bit(OKM)).
+
+fun updateCounter(number): number.
+fun secretBoxSeal(bitstring, nonce, msgKey): bitstring.
+fun secretBoxOpen(bitstring, nonce, msgKey): bitstring.
+fun uint64AsNonce(number): nonce.
+
+(* Encryption Phase Events *)
+event evRequesterSendcipherText(bitstring).
+event evResponderReceiveCipherText(bitstring).
+event evResponderSendCipherText(bitstring).
+event evRequesterReceiveCipherText(bitstring).
+
+(* 5th step - Requester encrypt plaintext and send ciphertext *)
+let step5clientA() =
+(
+	get step3_table_requester(ecdhkey_AB_Requester) in
+	let Constant = uint64AsNonce(counter) in
+	let init_CK_Requester = sharedKey2chainKey(ecdhkey_AB_Requester) in 
+	let (nextCK_Requester: chainKey, MK: msgKey) = deriveNextKeys(init_CK_Requester, Constant) in
+	let cipherTextRequester = secretBoxSeal(plainTextRequester, Constant, MK) in
+	out(ch_c2c, (cipherTextRequester, counter));
+	event evRequesterSendcipherText(cipherTextRequester);
+	insert step6_table_requester(nextCK_Requester)
+).
+
+(* 6th step - Responder receive ciphertext and decrypt it, then encrypt new plaintext and send *)
+let step6clientB() =
+(
+	get step6_table_responder(ecdhkey_AB_Responder) in 
+	in(ch_c2c, (cipherTextRequester: bitstring, counter: number));
+	event evResponderReceiveCipherText(cipherTextRequester);
+
+	let Constant = uint64AsNonce(counter) in
+	let init_CK_Responder = sharedKey2chainKey(ecdhkey_AB_Responder) in 
+	let (next_CK_Responder: chainKey, MK_Responder: msgKey) = deriveNextKeys(init_CK_Responder, Constant) in
+	let plainTextRequester = secretBoxOpen(cipherTextRequester, Constant, MK_Responder) in
+
+
+	let nextCounter = updateCounter(counter) in
+	let nextConstant = uint64AsNonce(nextCounter) in
+	let (next_next_CK_Responder: chainKey, nextMK: msgKey) = deriveNextKeys(next_CK_Responder, nextConstant) in
+	let cipherTextResponder = secretBoxSeal(plainTextResponder, nextConstant, nextMK) in
+	out(ch_c2c, (cipherTextResponder, nextCounter));
+	event evResponderSendCipherText(cipherTextResponder)
+).
+
+(* 7th step - Requester receive ciphertext and decrypt it *)
+let step7clientA() =
+(
+	get step6_table_requester(nextCK_Requester) in 
+	in(ch_c2c, (cipherTextResponder: bitstring, newCounter: number));
+	let Constant = uint64AsNonce(newCounter) in
+	let (next_next_CK_Requester: chainKey, nextMK_Requester: msgKey) = deriveNextKeys(nextCK_Requester, Constant) in
+	let plainTextResponder = secretBoxOpen(cipherTextResponder, Constant, nextMK_Requester) in
+	event evRequesterReceiveCipherText(plainTextResponder)
+).
+
+
+(* Authenticity properties *)
+query pk_A_E:publicKey; event(evResponderHelloReceiveKey(pk_A_E)) ==> event(evRequesterHelloSendKey(pk_A_E)).
+query pk_A_I: publicKey; event(evResponderCalcPublicKey(pk_A_I)) ==> event(evRequesterSealPublicKey(pk_A_I)).
+query pk_A_E:publicKey, SharedSecret_ab:sharedKey, SharedSecret_aB:sharedKey; event(evResponderCalcShareSecret(SharedSecret_ab, SharedSecret_aB))  ==> event(evRequesterHelloSendKey(pk_A_E)).
+query SharedSecret_ab:sharedKey, SharedSecret_aB:sharedKey; event(evResponderCalcShareSecret(SharedSecret_ab, SharedSecret_aB))  ==> event(evRequesterCalcShareSecret(SharedSecret_ab, SharedSecret_aB)).
+query boxKeyRequester: boxKey, SharedSecret_AB:sharedKey; event(evResponderAuthenticateCalcSharedKey(SharedSecret_AB)) ==> event(evRequesterSendboxKey(boxKeyRequester)).
+
+query cipherTextRequester: bitstring; event(evResponderReceiveCipherText(cipherTextRequester)) ==> event(evRequesterSendcipherText(cipherTextRequester)).
+query plainTextResponder: bitstring, cipherTextRequester: bitstring; event(evRequesterReceiveCipherText(plainTextResponder)) ==> event(evResponderSendCipherText(cipherTextRequester)).
+
+(* Confidentiality properties *)
+query attacker(plainTextRequester).
+query attacker(plainTextResponder).
+
+process
+
+	new skey_A_I: privateKey; 
+	new skey_B_I: privateKey;
+
+(
+	(!step1clientA(skey_A_I)) | (!step1RendezvousPoint()) | (!step1clientB()) | 
+	(!step2clientB(skey_B_I)) | (!step2RendezvousPoint()) | (!step2clientA()) | 
+	(!step3clientA()) | (!step3clientB()) |
+	(step5clientA()) | (step6clientB()) |
+	(step7clientA())
+)

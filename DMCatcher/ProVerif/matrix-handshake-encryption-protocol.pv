@@ -1,0 +1,369 @@
+(* Proverif code of X3-ECDH in Matrix protocol *)
+(* open channel for data communication between Alice and Bob *)
+free ch_c2s: channel.
+free ch_s2s: channel.
+free ch_s2c: channel.
+
+free userID_A: bitstring.
+free userID_B: bitstring.
+
+(* type defination *)
+type key.
+type pkey.
+type skey.
+fun pk(skey): pkey.
+fun rk(skey): skey.
+type random_num.
+type number.
+type sharedkey.
+type iv.
+
+(* OLM constant value *)
+const INFO: bitstring.
+const SALT: bitstring.
+const LENGTH: bitstring.
+const PADDING_1: bitstring.
+const PADDING_2: bitstring.
+
+const KeysClaim: bitstring.
+const KeysQuery: bitstring.
+
+(* OLM Algorithm tables used to pass data between steps *)
+table table1_client_alice(skey, skey, pkey, pkey, pkey, pkey, key).
+table table1_client_bob(skey, skey, pkey, pkey, pkey, pkey, key).
+table table1_server_alice(pkey, pkey, pkey, pkey).
+table table1_server_bob(pkey, pkey, pkey, pkey).
+
+(* Concatenation helper functions *)
+fun concat3(bitstring, bitstring, bitstring): bitstring.
+fun first_part3(bitstring): bitstring.
+equation forall b1: bitstring, b2: bitstring, b3: bitstring; first_part3(concat3(b1, b2, b3)) = b1.
+
+fun concat2(bitstring, bitstring): bitstring.
+fun first_part2(bitstring): bitstring.
+equation forall b1: bitstring, b2: bitstring; first_part2(concat2(b1, b2)) = b1.
+
+(* Helper functions to get bits from a bitstring *)
+fun fist256bit(bitstring): bitstring.
+fun next256bit(bitstring): bitstring.
+fun last128bit(bitstring): bitstring.
+
+(* Elliptic Curve Diffie–Hellman Key Exchange. https://cryptobook.nakov.com/asymmetric-key-ciphers/ecdh-key-exchange *)
+type G.
+type scalar.
+type basis.
+const P:G [data].
+(* fun Ggen(basis):G. *)
+fun sca(scalar, G):G.
+equation forall x:scalar, y:scalar; sca(x, sca(y, P))= sca(y, sca(x, P)).
+
+(* type conversion functions *)
+fun private_key2scalar(skey): scalar [typeConverter].
+fun public_key2G(pkey): G [typeConverter].
+fun G2bitstring(G): bitstring [typeConverter].
+fun bitstring2key(bitstring): key [typeConverter].
+fun bitstring2sharedkey(bitstring): sharedkey [typeConverter].
+fun key2bitstring(key): bitstring [typeConverter].
+fun G2key(G): key [typeConverter].
+
+(* sharedkey calculation *)
+(* 
+letfun get_sharedkey(sk_I_local:skey, pk_I_remote:pkey, sk_E_local:skey, pk_E_remote:pkey) = 
+concat3(
+concat3(sca(private_key2scalar(sk_I_local), public_key2G(pk_E_remote)), sca(private_key2scalar(sk_E_local), public_key2G(pk_I_remote))), 
+sca(private_key2scalar(sk_E_local), public_key2G(pk_E_remote))).
+*)
+letfun get_ecdhkey(pk_E_remote:pkey, sk_I_local:skey) = sca(private_key2scalar(sk_I_local), public_key2G(pk_E_remote)).
+letfun get_ecdhkey_1(sk_I_local:skey, pk_E_remote:pkey) = sca(private_key2scalar(sk_I_local), public_key2G(pk_E_remote)).
+letfun get_ecdhkey_2(sk_E_local:skey, pk_I_remote:pkey) = sca(private_key2scalar(sk_E_local), public_key2G(pk_I_remote)).
+letfun get_ecdhkey_3(sk_E_local:skey, pk_E_remote:pkey) = sca(private_key2scalar(sk_E_local), public_key2G(pk_E_remote)).
+
+(* OLM defined functions from Matrix spec *)
+fun HKDF(bitstring, key, bitstring, nat): bitstring.
+fun HMAC_SHA256(key, bitstring): key.
+
+(* IKM: input keying material, OKM: output keying material *)
+letfun h1(SALT: bitstring, IKM: key, INFO: bitstring, LENGTH: nat) = 
+let OKM = HKDF(SALT, IKM, INFO, LENGTH) in 
+(fist256bit(OKM), next256bit(OKM)).
+
+letfun h2(SALT: bitstring, IKM: key, INFO: bitstring, LENGTH: nat) = 
+let OKM = HKDF(SALT, IKM, INFO, LENGTH) in 
+(fist256bit(OKM), next256bit(OKM), last128bit(OKM)).
+
+(* AES-CBC *)
+fun senccbc(bitstring, key, iv): bitstring.
+reduc forall m:bitstring, k: key, i: iv; sdeccbc(senccbc(m, k, i), k, i) = m.
+
+(* Client send sensitive data *)
+free plain_text_A: bitstring [private].
+free plain_text_B: bitstring [private].
+free cipher_text_A: bitstring [private].
+free cipher_text_B: bitstring [private].
+
+
+(* Keys exchange events *)
+event evClientAliceReceiveKeys(pkey, pkey).
+event evClientAliceSendKeys(pkey, pkey).
+event evClientAliceCalcShareSecret(sharedkey).
+event evClientAliceReceiveCipertext(bitstring).
+event evClientAliceSendCipertext(bitstring).
+event evClientAliceSendRatchetKey(pkey).
+event evClientAliceReceiveRatchetKey(pkey).
+event evClientAliceDecryptPlaintext(bitstring).
+
+event evClientBobReceiveKeys(pkey, pkey).
+event evClientBobSendKeys(pkey, pkey).
+event evClientBobCalcShareSecret(sharedkey).
+event evClientBobReceiveCipertext(bitstring).
+event evClientBobSendCipertext(bitstring).
+event evClientBobSendRatchetKey(pkey).
+event evClientBobReceiveRatchetKey(pkey).
+event evClientBobDecryptPlaintext(bitstring).
+
+
+(* set input/output as precise as described *)
+(* 
+set preciseActions = true.
+set attacker = passive. 
+*)
+
+(* step 1 ECDH key exchange in client Alice *)
+let step1clientA(skey_A_I:skey) =
+(	
+	new skey_A_E:skey;
+	
+	(* Identity and One-time keys *)
+	let pk_A_I = pk(skey_A_I) in
+	let pk_A_E = pk(skey_A_E) in
+	
+	event evClientAliceSendKeys(pk_A_I, pk_A_E);
+	out(ch_c2s, (pk_A_I,pk_A_E));
+	
+	in(ch_s2c, (pk_B_I:pkey, pk_B_E:pkey));
+	event evClientAliceReceiveKeys(pk_B_I, pk_B_E);
+	
+	let ecdhkey_AB_1 = get_ecdhkey_1(skey_A_I, pk_B_E) in
+	let ecdhkey_AB_2 = get_ecdhkey_2(skey_A_E, pk_B_I) in
+	let ecdhkey_AB_3 = get_ecdhkey_3(skey_A_E, pk_B_E) in
+	let SharedSecret_AB = concat3(G2bitstring(ecdhkey_AB_1), G2bitstring(ecdhkey_AB_2), G2bitstring(ecdhkey_AB_3)) in
+	
+	event evClientAliceCalcShareSecret(bitstring2sharedkey(SharedSecret_AB));
+	
+	insert table1_client_alice(skey_A_I, skey_A_E, pk_A_I, pk_A_E, pk_B_I, pk_B_E, bitstring2key(SharedSecret_AB))
+).
+
+(* step 1 ECDH key exchange in homeserver Alice *)
+let step1serverA() =
+(
+	in(ch_c2s, (pk_A_I:pkey, pk_A_E:pkey));
+	out(ch_s2s, (pk_A_I, pk_A_E));
+	
+	in(ch_s2s, (pk_B_I:pkey, pk_B_E:pkey));
+	out(ch_s2c, (pk_B_I,pk_B_E))
+).
+
+(* step 1 ECDH key exchange in homeserver Bob *)
+let step1serverB() =
+(
+	in(ch_s2s, (pk_A_I:pkey, pk_A_E:pkey));
+	out(ch_s2c, (pk_A_I,pk_A_E));
+	
+	in(ch_c2s, (pk_B_I:pkey, pk_B_E:pkey));
+	out(ch_s2s, (pk_B_I,pk_B_E))
+).
+
+(* step 1 ECDH key exchange in client Bob *)
+let step1clientB(skey_B_I:skey) =
+(	
+	new skey_B_E:skey;
+	
+	in(ch_s2c, (pk_A_I:pkey, pk_A_E:pkey));
+	event evClientBobReceiveKeys(pk_A_I, pk_A_E);
+		
+	(* Identity and One-time keys *)
+	let pk_B_I = pk(skey_B_I) in
+	let pk_B_E = pk(skey_B_E) in
+	
+	event evClientBobSendKeys(pk_B_I, pk_B_E);
+	out(ch_c2s, (pk_B_I,pk_B_E));
+	
+	let ecdhkey_AB_1 = get_ecdhkey_1(skey_B_I, pk_A_E) in
+	let ecdhkey_AB_2 = get_ecdhkey_2(skey_B_E, pk_A_I) in
+	let ecdhkey_AB_3 = get_ecdhkey_3(skey_B_E, pk_A_E) in
+	let SharedSecret_BA = concat3(G2bitstring(ecdhkey_AB_1), G2bitstring(ecdhkey_AB_2), G2bitstring(ecdhkey_AB_3)) in
+	event evClientBobCalcShareSecret(bitstring2sharedkey(SharedSecret_BA));
+	
+	insert table1_client_bob(skey_B_I, skey_B_E, pk_B_I, pk_B_E, pk_A_I, pk_A_E, bitstring2key(SharedSecret_BA))
+).
+
+
+(* step 2 client Alice encrypt message and send it. *)
+let step2clientA() = 
+(
+	get table1_client_alice(skey_A_I, skey_A_E, pk_A_I, pk_A_E, pk_B_I, pk_B_E, SharedSecret_AB) in 
+		
+	(* ------------------------------------------------------- *)
+	(* generate keys, encrypt plain_text_A, and send ciper-text. *)
+	(* ------------------------------------------------------- *)
+	(* generate root key, chain key, and ratchet key, and messgae key *)
+	let (rootKey: key, chainKey: key) = h1(SALT, SharedSecret_AB, INFO, 64) in
+	let ratchetKey_A = rk(skey_A_I) in
+	let msgKey = HMAC_SHA256(chainKey, PADDING_1) in 
+	
+	(* encrypt plain-text with the message key using an authenticated encryption scheme *)
+	let (aesKey: key, hmacKey: key, aesIV: iv) = h2(SALT, msgKey, INFO, 80) in
+	let cipher_text_A = senccbc(plain_text_A, aesKey, aesIV) in
+	
+	(* send public part of ratchet key, cipher-text *)	
+	event evClientAliceSendRatchetKey(pk(ratchetKey_A));
+	out(ch_c2s, pk(ratchetKey_A));
+	event evClientAliceSendCipertext(cipher_text_A);
+	out(ch_c2s, cipher_text_A);
+	
+	(* --------------------------------------------------------------------------- *)
+	(* receive Bob keys, and decrypt ciper-text. *)
+	(* --------------------------------------------------------------------------- *)
+	
+	(* receive Bob keys, and decrypt ciper-text *)
+	in(ch_s2c, pk_ratchetKey_B:pkey);
+	event evClientAliceReceiveRatchetKey(pk_ratchetKey_B);
+	in(ch_s2c, cipher_text_B:bitstring);
+	event evClientAliceReceiveCipertext(cipher_text_B);
+	
+	(* Advancing the root key *)
+	let (rootKey: key, chainKey: key) = h1(key2bitstring(rootKey), G2key(get_ecdhkey(pk_ratchetKey_B, ratchetKey_A)), INFO, 64) in
+	(* Advancing the chain key *)
+	let chainKey = HMAC_SHA256(chainKey, PADDING_2) in 
+	(* Creating a message key *)
+	let msgKey = HMAC_SHA256(chainKey, PADDING_1) in 
+	
+	let (aesKey: key, hmacKey: key, aesIV: iv) = h2(SALT, msgKey, INFO, 80) in
+	let plain_text_B = sdeccbc(cipher_text_B, aesKey, aesIV) in
+	event evClientAliceDecryptPlaintext(plain_text_B);
+	0
+).
+
+(* step 2 server Alice receive cipher-text, public part of ratchet key, send it *)
+let step2serverA() =
+(	
+	get table1_server_alice(pk_A_I, pk_A_E, pk_B_I, pk_B_E) in
+	
+	(* receive data from Alice client *)
+	in(ch_c2s, cipher_text_A:bitstring);
+	in(ch_c2s, pk_ratchetKey_A:pkey);
+
+	out(ch_s2s, cipher_text_A);
+	out(ch_s2s, pk_ratchetKey_A);
+
+	(* receive data from Bob server *)
+	in(ch_s2s, cipher_text_B:bitstring);
+	in(ch_s2s, pk_ratchetKey_B:pkey);
+
+	out(ch_s2c, cipher_text_B);
+	out(ch_s2c, pk_ratchetKey_B)
+). 
+
+
+(* step 2 server Bob receive cipher-text, public part of ratchet key, send it  *)
+let step2serverB() =
+(
+	get table1_server_bob(pk_B_I, pk_B_E, pk_A_I, pk_A_E) in
+	
+	(* receive data from Alice server *)
+	in(ch_s2s, cipher_text_A:bitstring);
+	in(ch_s2s, pk_ratchetKey_A:pkey);
+
+	out(ch_c2s, cipher_text_A);
+	out(ch_c2s, pk_ratchetKey_A);
+	
+	(* receive data from Bob client *)
+	in(ch_c2s, cipher_text_B:bitstring);
+	in(ch_c2s, pk_ratchetKey_B:pkey);
+
+	out(ch_s2s, cipher_text_B);
+	out(ch_s2s, pk_ratchetKey_B)
+).
+
+(* step 2 client Bob decrypt message. *)
+let step2clientB() = 
+(
+	get table1_client_bob(skey_B_I, skey_B_E, pk_B_I, pk_B_E, pk_A_I, pk_A_E, SharedSecret_BA) in 
+	
+	(* --------------------------------------------------------------------------- *)
+	(* generate keys, receive Alice keys, and decrypt ciper-text. *)
+	(* --------------------------------------------------------------------------- *)
+	(* generate root key, chain key, and ratchet key, and messgae key *)
+	let (rootKey: key, chainKey: key) = h1(SALT, SharedSecret_BA, INFO, 64) in
+	let ratchetKey_B = rk(skey_B_I) in
+	let msgKey = HMAC_SHA256(chainKey, PADDING_1) in 
+	
+	(* receive Alice keys, and decrypt ciper-text *)
+	in(ch_s2c, pk_ratchetKey_A:pkey);
+	event evClientBobReceiveRatchetKey(pk_ratchetKey_A);
+	in(ch_s2c, cipher_text_A:bitstring);
+	event evClientBobReceiveCipertext(cipher_text_A);
+	
+	let (aesKey: key, hmacKey: key, aesIV: iv) = h2(SALT, msgKey, INFO, 80) in
+	let plain_text_A = sdeccbc(cipher_text_A, aesKey, aesIV) in
+	event evClientBobDecryptPlaintext(plain_text_A);
+	
+	(* ------------------------------------------------------- *)
+	(* generate keys, encrypt plain_text, and send ciper-text. *)
+	(* If we do not change the one-time keys *)
+	(* ------------------------------------------------------- *)	
+	
+	(* Advancing the root key *)
+	let (rootKey: key, chainKey: key) = h1(key2bitstring(rootKey), G2key(get_ecdhkey(pk_ratchetKey_A, ratchetKey_B)), INFO, 64) in
+	(* Advancing the chain key *)
+	let chainKey = HMAC_SHA256(chainKey, PADDING_2) in 
+	(* Creating a message key *)
+	let msgKey = HMAC_SHA256(chainKey, PADDING_1) in 
+	
+	(* encrypt plain-text with the message key using an authenticated encryption scheme *)
+	let (aesKey: key, hmacKey: key, aesIV: iv) = h2(SALT, msgKey, INFO, 80) in
+	let cipher_text_B = senccbc(plain_text_B, aesKey, aesIV) in
+	
+	(* send public part of ratchet key, cipher-text *)	
+	event evClientBobSendRatchetKey(pk(ratchetKey_B));
+	out(ch_c2s, pk(ratchetKey_B));
+	event evClientBobSendCipertext(cipher_text_B);
+	out(ch_c2s, cipher_text_B);
+	0
+).
+
+(* Authenticity properties *)
+query pk_I:pkey, pk_E:pkey; event(evClientBobReceiveKeys(pk_I, pk_E)) ==> event(evClientAliceSendKeys(pk_I, pk_E)).
+query pk_I:pkey, pk_E:pkey; event(evClientAliceReceiveKeys(pk_I, pk_E)) ==> event(evClientBobSendKeys(pk_I, pk_E)).
+
+query pk_I:pkey, pk_E:pkey, SharedSecret:sharedkey; event(evClientAliceCalcShareSecret(SharedSecret))  ==> event(evClientBobSendKeys(pk_I, pk_E)).
+query pk_I:pkey, pk_E:pkey, SharedSecret:sharedkey; event(evClientBobCalcShareSecret(SharedSecret))  ==> event(evClientAliceSendKeys(pk_I, pk_E)).
+
+query ratchetKey:pkey; event(evClientAliceReceiveRatchetKey(ratchetKey)) ==> event(evClientBobSendRatchetKey(ratchetKey)).
+query ratchetKey:pkey; event(evClientBobReceiveRatchetKey(ratchetKey)) ==> event(evClientAliceSendRatchetKey(ratchetKey)).
+
+query SharedSecret:sharedkey; event(evClientAliceCalcShareSecret(SharedSecret))  ==> event(evClientBobCalcShareSecret(SharedSecret)).
+query SharedSecret:sharedkey; event(evClientBobCalcShareSecret(SharedSecret))  ==> event(evClientAliceCalcShareSecret(SharedSecret)).
+
+query ciper_text:bitstring; event(evClientAliceReceiveCipertext(ciper_text)) ==> event(evClientBobSendCipertext(ciper_text)).
+query ciper_text:bitstring; event(evClientBobReceiveCipertext(ciper_text)) ==> event(evClientAliceSendCipertext(ciper_text)).
+
+query ciper_text:bitstring, plain_text:bitstring; event(evClientAliceDecryptPlaintext(plain_text)) ==> event(evClientBobSendCipertext(ciper_text)).
+query ciper_text:bitstring, plain_text:bitstring; event(evClientBobDecryptPlaintext(plain_text)) ==> event(evClientAliceSendCipertext(ciper_text)).
+
+(* Confidentiality properties *)
+query attacker(plain_text_A).
+query attacker(plain_text_B).
+
+query attacker(cipher_text_A).
+query attacker(cipher_text_B).
+
+process
+
+  new skey_A_I:skey; 
+  new skey_B_I:skey; 
+  
+( 
+  (!step1clientA(skey_A_I)) | (!step1serverA()) | (!step1serverB()) | (!step1clientB(skey_B_I)) | 
+  (!step2clientA()) | (!step2serverA()) | (!step2serverB()) | (!step2clientB())
+)
