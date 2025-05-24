@@ -284,6 +284,6 @@ process
 	(!step1clientA(skey_A_I)) | (!step1RendezvousPoint()) | (!step1clientB()) | 
 	(!step2clientB(skey_B_I)) | (!step2RendezvousPoint()) | (!step2clientA()) | 
 	(!step3clientA()) | (!step3clientB()) |
-	(step5clientA()) | (step6clientB()) |
-	(step7clientA())
+	(!step5clientA()) | (!step6clientB()) |
+	(!step7clientA())
 )
