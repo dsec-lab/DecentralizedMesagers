@@ -1,0 +1,278 @@
+(* ProVerif code of handshake-then-encryption protocol of Status *)
+
+(* E: Ephemeral, I:  Identity*)
+(* open channel for data communication between client and rendezvous point *)
+free ch_c2s: channel.
+free ch_s2c: channel.
+free ch_c2c: channel.
+
+
+(* type defination *)
+type publicKey.
+type privateKey.
+type sharedKey.
+type signKey.
+fun pk(privateKey): publicKey.
+fun signKeyGen(privateKey): signKey.
+
+const True: bitstring.
+
+(* Elliptic Curve Diffie–Hellman Key Exchange. https://cryptobook.nakov.com/asymmetric-key-ciphers/ecdh-key-exchange *)
+type G.
+type scalar.
+type basis.
+const P:G [data].
+fun sca(scalar, G): G.
+equation forall x:scalar, y:scalar; sca(x, sca(y, P))= sca(y, sca(x, P)).
+
+fun concat2(bitstring, bitstring): bitstring.
+fun first_part2(bitstring): bitstring.
+equation forall b1: bitstring, b2: bitstring; first_part2(concat2(b1, b2)) = b1.
+
+(* type conversion functions *)
+fun privateKey2scalar(privateKey): scalar [typeConverter].
+fun publicKey2G(publicKey): G [typeConverter].
+fun G2sharedKey(G): sharedKey [typeConverter].
+fun signKey2publicKey(signKey): publicKey [typeConverter].
+
+(* sharedkey calculation *)
+fun Encode(publicKey): bitstring.
+fun SignBundle(bitstring, privateKey): bitstring.
+fun VerifySignature(bitstring, signKey): bitstring.
+letfun calc_ECDH_Key(sk:privateKey, pk:publicKey) = sca(privateKey2scalar(sk), publicKey2G(pk)).
+fun KDF(G, G, G): sharedKey.
+fun AEAD(bitstring, bitstring, sharedKey): bitstring.
+
+(* tables used to pass data between steps *)
+table step0_table_responder(privateKey, privateKey, publicKey).
+table step1_table_requester(sharedKey).
+table step2_table_responder(sharedKey).
+
+(* -------------- Handshake Phase ----------------- *)
+free initialPlainTextRequester: bitstring [private].
+free plainTextResponderHandshake: bitstring [private].
+
+event evRequesterSendKeys(publicKey, publicKey).
+event evResponderSendKeys(publicKey, signKey, bitstring).
+event evRequesterReceiveKeys(publicKey, signKey, bitstring).
+event evRequesterCalcSharedKey(sharedKey).
+event evResponderCalcSharedKey(sharedKey).
+event evRequesterEncryptPlainText(bitstring).
+event evResponderDecryptCipherText(bitstring).
+
+(* step 0: Publishing keys *)
+let step0clientB(skey_IK_B: privateKey) =
+(	
+	let pk_IK_B = pk(skey_IK_B) in
+	new sk_SPK_B: privateKey;
+	let SPK_B = signKeyGen(sk_SPK_B) in 
+	let signature_B = SignBundle(Encode(signKey2publicKey(SPK_B)), skey_IK_B) in 
+	out(ch_c2s, (pk_IK_B, SPK_B, signature_B));
+	event evResponderSendKeys(pk_IK_B, SPK_B, signature_B);
+
+	insert step0_table_responder(skey_IK_B, sk_SPK_B, pk_IK_B)
+).
+let step0Broadcast() =
+(
+	in(ch_c2s, (pk_IK_B: publicKey, SPK_B: signKey, signature_B: bitstring));
+	out(ch_s2c, (pk_IK_B, SPK_B, signature_B))
+).
+
+(* step 1: Alice fetches a "prekey bundle" from the server and Sending the initial message *)
+let step1clientA(skey_IK_A: privateKey) =
+(	
+	in(ch_s2c, (pk_IK_B: publicKey, SPK_B: signKey, signature_B: bitstring));
+	event evRequesterReceiveKeys(pk_IK_B, SPK_B, signature_B);
+	if True = VerifySignature(signature_B, SPK_B) then
+	new skey_EK_A: privateKey;
+	(* Identity and Ephemeral keys *)
+	let pk_IK_A = pk(skey_IK_A) in
+	let pk_EK_A = pk(skey_EK_A) in
+
+	let DH1_A = calc_ECDH_Key(skey_IK_A, signKey2publicKey(SPK_B)) in
+	let DH2_A = calc_ECDH_Key(skey_EK_A, pk_IK_B) in
+	let DH3_A = calc_ECDH_Key(skey_EK_A, signKey2publicKey(SPK_B)) in
+	let SK_A = KDF(DH1_A, DH2_A, DH3_A) in
+	event evRequesterCalcSharedKey(SK_A);
+
+	let AD_A = concat2(Encode(pk_IK_A), Encode(pk_IK_B)) in
+	let initial_ciphertext_A = AEAD(initialPlainTextRequester, AD_A, SK_A) in
+	event evRequesterEncryptPlainText(initial_ciphertext_A);
+	
+	out(ch_c2c, (pk_IK_A, pk_EK_A, initial_ciphertext_A, AD_A));
+	event evRequesterSendKeys(pk_IK_A, pk_EK_A);
+	insert step1_table_requester(SK_A)
+).
+
+(* step 2: Bob receiving the initial message *)
+let step2clientB() =
+(	
+	get step0_table_responder(skey_IK_B, sk_SPK_B, pk_IK_B) in 
+	in(ch_c2c, (pk_IK_A: publicKey, pk_EK_A: publicKey, initial_ciphertext_A: bitstring, AD_A: bitstring));
+
+	let DH1_B = calc_ECDH_Key(sk_SPK_B, pk_IK_A) in
+	let DH2_B = calc_ECDH_Key(skey_IK_B, pk_IK_A) in
+	let DH3_B = calc_ECDH_Key(sk_SPK_B, pk_EK_A) in
+	let SK_B = KDF(DH1_B, DH2_B, DH3_B) in
+	event evResponderCalcSharedKey(SK_B);
+
+	let AD_B = concat2(Encode(pk_IK_A), Encode(pk_IK_B)) in
+	if AD_B = AD_A then
+	let initialPlainTextRequester = AEAD(initial_ciphertext_A, AD_B, SK_B) in
+	event evResponderDecryptCipherText(initialPlainTextRequester);
+
+	insert step2_table_responder(SK_B)
+).
+
+
+(* -------------- Encryption Phase ----------------- *)
+type chainKey.
+type rootKey.
+type msgKey.
+type authKey.
+type number.
+type nonce.
+
+(* type conversion functions *)
+fun sharedKey2rootKey(sharedKey): rootKey [typeConverter].
+
+(* tables used to pass data between steps *)
+table step3_table_responder(privateKey, publicKey).
+
+const Constant: nonce.
+const associatedData: bitstring.
+
+fun HKDF_3(rootKey, privateKey, publicKey): bitstring.
+fun fist256bit(bitstring): rootKey.
+fun next256bit(bitstring): chainKey.
+letfun kdfRK(RK: rootKey, DH_SK: privateKey, DH_PK: publicKey) = 
+let OKM = HKDF_3(RK, DH_SK, DH_PK) in (fist256bit(OKM), next256bit(OKM)).
+
+fun HKDF_2(chainKey, nonce): bitstring.
+fun fistPart(bitstring): chainKey.
+fun nextPart(bitstring): msgKey.
+letfun kdfCK(CK: chainKey, NONCE: nonce) = 
+let OKM = HKDF_2(CK, NONCE) in (fistPart(OKM), nextPart(OKM)).
+
+fun HKDF(msgKey): bitstring.
+fun fist256bits(bitstring): msgKey.
+fun next256bits(bitstring): authKey.
+fun last256bits(bitstring): nonce.
+letfun deriveEncKeys(MK: msgKey) = 
+let OKM = HKDF(MK) in (fist256bits(OKM), next256bits(OKM), last256bits(OKM)).
+fun computeSignature(authKey, bitstring, bitstring): bitstring.
+
+fun ENCRYPT(msgKey, bitstring, nonce): bitstring.
+fun DECRYPT(msgKey, bitstring, bitstring): bitstring.
+
+(* Client send sensitive data *)
+free plainTextRequester: bitstring [private].
+free plainTextResponder: bitstring [private].
+
+(* Encryption Phase Events *)
+event evResponderSendDHKey(publicKey).
+event evRequesterSendDHKey(publicKey).
+event evRequesterCalcMessagerKey(msgKey).
+event evResponderCalcMessagerKey(msgKey).
+event evRequesterSendCipherText(bitstring).
+event evResponderSendCipherText(bitstring).
+event evRequesterReceiveCipherText(bitstring).
+event evResponderReceiveCipherText(bitstring).
+event evRequesterDecryptCipherText(bitstring).
+event evResponderDecryptCipherText_2(bitstring).
+
+
+(* To implement the DH ratchet, each party generates a DH key pair (a Diffie-Hellman public key and private key) which becomes their current ratchet key pair. *)
+
+let step3clientB() =
+(
+	new skey_DH_B: privateKey;
+	let pk_DH_B = pk(skey_DH_B) in
+	out(ch_c2c, pk_DH_B);
+	event evResponderSendDHKey(pk_DH_B);
+	insert step3_table_responder(skey_DH_B, pk_DH_B) 
+).
+
+(* step 3: Alice using the SK and Double Ratchet protocol to encrypt message and send it *)
+let step3clientA() =
+(
+	in(ch_c2c, pk_DH_B: publicKey);
+	new skey_DH_A: privateKey;
+	let pk_DH_A = pk(skey_DH_A) in
+	out(ch_c2c, pk_DH_A);
+	event evRequesterSendDHKey(pk_DH_A);
+	
+	get step1_table_requester(SK_A) in 
+	let init_RK_A = sharedKey2rootKey(SK_A) in 
+	let (RK_1_A: rootKey, CK_0_A: chainKey) = kdfRK(init_RK_A, skey_DH_A, pk_DH_B) in 
+	let (CK_1_A: chainKey, MK_1_A: msgKey) = kdfCK(CK_0_A, Constant) in
+	event evRequesterCalcMessagerKey(MK_1_A);
+	let (encKey_1_A: msgKey, authKey_1_A: authKey, iv: nonce) = deriveEncKeys(MK_1_A) in
+	let cipherTextRequester = ENCRYPT(encKey_1_A, plainTextRequester, iv) in
+	out(ch_c2c, (cipherTextRequester, computeSignature(authKey_1_A, cipherTextRequester, associatedData)));
+	event evRequesterSendCipherText(cipherTextRequester);
+
+	in(ch_c2c, (cipherTextResponder: bitstring, signature: bitstring));
+	event evRequesterReceiveCipherText(cipherTextResponder);
+
+	let (RK_2_A: rootKey, CK_1_A: chainKey) = kdfRK(RK_1_A, skey_DH_A, pk_DH_B) in 
+	let (CK_2_A: chainKey, MK_2_A: msgKey) = kdfCK(CK_1_A, Constant) in 
+
+	let (encKey_2_A: msgKey, authKey_2_A: authKey, _: nonce) = deriveEncKeys(MK_2_A) in
+	if signature = computeSignature(authKey_2_A, cipherTextResponder, associatedData) then
+	let plainTextResponder = DECRYPT(encKey_2_A, cipherTextResponder, associatedData) in
+	event evRequesterDecryptCipherText(cipherTextResponder)
+).
+
+(* step 4: Bob using the SK and Double Ratchet protocol to decrypt, encrypt message and send it *)
+let step4clientB() =
+(
+	get step3_table_responder(skey_DH_B, pk_DH_B) in 
+	get step2_table_responder(SK_B) in 
+	let init_RK_B = SK_B in
+
+	in(ch_c2c, pk_DH_A: publicKey);
+	let init_RK_B = sharedKey2rootKey(SK_B) in 
+	let (RK_1_B: rootKey, CK_0_B: chainKey) = kdfRK(init_RK_B, skey_DH_B, pk_DH_A) in 
+	let (CK_1_B: chainKey, MK_1_B: msgKey) = kdfCK(CK_0_B, Constant) in
+	event evResponderCalcMessagerKey(MK_1_B);
+
+	in(ch_c2c, (cipherTextRequester: bitstring, signature: bitstring));
+	event evResponderReceiveCipherText(cipherTextRequester);
+	let (encKey_1_B: msgKey, authKey_1_B: authKey, _: nonce) = deriveEncKeys(MK_1_B) in
+	if signature = computeSignature(authKey_1_B, cipherTextRequester, associatedData) then
+	let plainTextRequester = DECRYPT(encKey_1_B, cipherTextRequester, associatedData) in
+	event evResponderDecryptCipherText_2(cipherTextRequester);
+	
+	let (RK_2_B: rootKey, CK_1_B: chainKey) = kdfRK(RK_1_B, skey_DH_B, pk_DH_A) in 
+	let (CK_2_B: chainKey, MK_2_B: msgKey) = kdfCK(CK_1_B, Constant) in 
+	let (encKey_2_B: msgKey, authKey_2_B: authKey, iv: nonce) = deriveEncKeys(MK_2_B) in
+	let cipherTextResponder = ENCRYPT(encKey_2_B, plainTextResponder, iv) in
+	out(ch_c2c, (cipherTextResponder, computeSignature(authKey_2_B, cipherTextResponder, associatedData)));
+	event evResponderSendCipherText(cipherTextResponder)
+).
+
+(* Authenticity properties *)
+query pk_IK: publicKey, pk_EK: publicKey, SK: sharedKey; event(evResponderCalcSharedKey(SK)) ==> event(evRequesterSendKeys(pk_IK, pk_EK)).
+(*
+query initialPlainTextRequester: bitstring, initial_ciphertext_A: bitstring; event(evResponderDecryptCipherText(initialPlainTextRequester)) ==> event(evRequesterEncryptPlainText(initial_ciphertext_A)).
+*)
+query pk_IK: publicKey, pk_EK: publicKey, pk_DH: publicKey, MK: msgKey; event(evResponderCalcMessagerKey(MK)) ==> event(evRequesterSendDHKey(pk_DH)) || event(evRequesterSendKeys(pk_IK, pk_EK)).
+query cipherText: bitstring, pk_DH: publicKey; event(evResponderDecryptCipherText(cipherText)) ==> event(evRequesterSendCipherText(cipherText)).
+
+(* Confidentiality properties *)
+query attacker(plainTextRequester).
+query attacker(plainTextResponder).
+
+process
+
+	new skey_IK_A: privateKey; 
+	new skey_IK_B: privateKey;
+
+(
+	
+	(!step0clientB(skey_IK_B)) | (!step0Broadcast()) |
+	(!step1clientA(skey_IK_A)) | (!step2clientB()) |
+	(!step3clientB()) | (!step3clientA()) |
+	(!step4clientB())
+)
