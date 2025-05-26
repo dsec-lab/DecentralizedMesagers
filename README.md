@@ -137,7 +137,7 @@ https://specs.status.im/spec/2;https://specs.status.im/spec/5
 >   |-- 甚至可以通过迁移学习的技术，在比如利用Matrix的数据进行训练，测试Berty网络的安全行，符合interoperability。
 > 6. 协议安全分析
 >   |-- 不同decentralized messager存在的协议漏洞（共性、差异性）
->   |-- 分别针对与Direct Messaging以及Group Messaging做安全分析？比如，对Matrix、Berty的Group和Direct协议进行分析
+>   |-- 分别针对与Direct Messaging以及Group Messaging做安全分析，比如，对Matrix、Berty、Status的Direct Chat协议进行分析。（已完成ProVerif代码的编写）
 >   |-- 提出防御策略
 > 7. 多设备安全分析、群聊天的安全（未来研究工作）
 > 
