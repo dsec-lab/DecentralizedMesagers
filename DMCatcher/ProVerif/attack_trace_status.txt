@@ -1,0 +1,602 @@
+File "./status-handshake-encryption-protocol.pv", line 121, characters 6-30:
+Warning: identifier initialPlainTextRequester rebound.
+File "./status-handshake-encryption-protocol.pv", line 218, characters 24-29:
+Warning: identifier CK_1_A rebound.
+File "./status-handshake-encryption-protocol.pv", line 223, characters 6-23:
+Warning: identifier plainTextResponder rebound.
+File "./status-handshake-encryption-protocol.pv", line 235, characters 6-14:
+Warning: identifier init_RK_B rebound.
+File "./status-handshake-encryption-protocol.pv", line 244, characters 6-23:
+Warning: identifier plainTextRequester rebound.
+File "./status-handshake-encryption-protocol.pv", line 247, characters 24-29:
+Warning: identifier CK_1_B rebound.
+Linear part:
+sca(x,sca(y,P)) = sca(y,sca(x,P))
+Completing equations...
+Completed equations:
+sca(x,sca(y,P)) = sca(y,sca(x,P))
+Convergent part:
+first_part2(concat2(b1,b2)) = b1
+Completing equations...
+Completed equations:
+first_part2(concat2(b1,b2)) = b1
+Process 0 (that is, the initial process):
+{1}new skey_IK_A: privateKey;
+{2}new skey_IK_B: privateKey;
+(
+    {3}!
+    {4}let skey_IK_B_1: privateKey = skey_IK_B in
+    {5}let pk_IK_B: publicKey = pk(skey_IK_B_1) in
+    {6}new sk_SPK_B: privateKey;
+    {7}let SPK_B: signKey = signKeyGen(sk_SPK_B) in
+    {8}let signature_B: bitstring = SignBundle(Encode(SPK_B),skey_IK_B_1) in
+    {9}out(ch_c2s, (pk_IK_B,SPK_B,signature_B));
+    {10}event evResponderSendKeys(pk_IK_B,SPK_B,signature_B);
+    {11}insert step0_table_responder(skey_IK_B_1,sk_SPK_B,pk_IK_B)
+) | (
+    {12}!
+    {13}in(ch_c2s, (pk_IK_B_1: publicKey,SPK_B_1: signKey,signature_B_1: bitstring));
+    {14}out(ch_s2c, (pk_IK_B_1,SPK_B_1,signature_B_1))
+) | (
+    {15}!
+    {16}let skey_IK_A_1: privateKey = skey_IK_A in
+    {17}in(ch_s2c, (pk_IK_B_2: publicKey,SPK_B_2: signKey,signature_B_2: bitstring));
+    {18}event evRequesterReceiveKeys(pk_IK_B_2,SPK_B_2,signature_B_2);
+    {19}if (True = VerifySignature(signature_B_2,SPK_B_2)) then
+    {20}new skey_EK_A: privateKey;
+    {21}let pk_IK_A: publicKey = pk(skey_IK_A_1) in
+    {22}let pk_EK_A: publicKey = pk(skey_EK_A) in
+    {23}let DH1_A: G = sca(skey_IK_A_1,SPK_B_2) in
+    {24}let sk: privateKey = skey_EK_A in
+    {25}let DH2_A: G = sca(sk,pk_IK_B_2) in
+    {26}let sk_1: privateKey = skey_EK_A in
+    {27}let DH3_A: G = sca(sk_1,SPK_B_2) in
+    {28}let SK_A: sharedKey = KDF(DH1_A,DH2_A,DH3_A) in
+    {29}event evRequesterCalcSharedKey(SK_A);
+    {30}let AD_A: bitstring = concat2(Encode(pk_IK_A),Encode(pk_IK_B_2)) in
+    {31}let initial_ciphertext_A: bitstring = AEAD(initialPlainTextRequester,AD_A,SK_A) in
+    {32}event evRequesterEncryptPlainText(initial_ciphertext_A);
+    {33}out(ch_c2c, (pk_IK_A,pk_EK_A,initial_ciphertext_A,AD_A));
+    {34}event evRequesterSendKeys(pk_IK_A,pk_EK_A);
+    {35}insert step1_table_requester(SK_A)
+) | (
+    {36}!
+    {48}get step0_table_responder(skey_IK_B_2: privateKey,sk_SPK_B_1: privateKey,pk_IK_B_3: publicKey) in
+    {37}in(ch_c2c, (pk_IK_A_1: publicKey,pk_EK_A_1: publicKey,initial_ciphertext_A_1: bitstring,AD_A_1: bitstring));
+    {38}let DH1_B: G = sca(sk_SPK_B_1,pk_IK_A_1) in
+    {39}let DH2_B: G = sca(skey_IK_B_2,pk_IK_A_1) in
+    {40}let DH3_B: G = sca(sk_SPK_B_1,pk_EK_A_1) in
+    {41}let SK_B: sharedKey = KDF(DH1_B,DH2_B,DH3_B) in
+    {42}event evResponderCalcSharedKey(SK_B);
+    {43}let AD_B: bitstring = concat2(Encode(pk_IK_A_1),Encode(pk_IK_B_3)) in
+    {44}if (AD_B = AD_A_1) then
+    {45}let initialPlainTextRequester_1: bitstring = AEAD(initial_ciphertext_A_1,AD_B,SK_B) in
+    {46}event evResponderDecryptCipherText(initialPlainTextRequester_1);
+    {47}insert step2_table_responder(SK_B)
+) | (
+    {49}!
+    {50}new skey_DH_B: privateKey;
+    {51}let pk_DH_B: publicKey = pk(skey_DH_B) in
+    {52}out(ch_c2c, pk_DH_B);
+    {53}event evResponderSendDHKey(pk_DH_B);
+    {54}insert step3_table_responder(skey_DH_B,pk_DH_B)
+) | (
+    {55}!
+    {56}in(ch_c2c, pk_DH_B_1: publicKey);
+    {57}new skey_DH_A: privateKey;
+    {58}let pk_DH_A: publicKey = pk(skey_DH_A) in
+    {59}out(ch_c2c, pk_DH_A);
+    {60}event evRequesterSendDHKey(pk_DH_A);
+    {87}get step1_table_requester(SK_A_1: sharedKey) in
+    {61}let init_RK_A: rootKey = SK_A_1 in
+    {62}let DH_SK: privateKey = skey_DH_A in
+    {63}let OKM: bitstring = HKDF_3(init_RK_A,DH_SK,pk_DH_B_1) in
+    {64}let (RK_1_A: rootKey,CK_0_A: chainKey) = (fist256bit(OKM),next256bit(OKM)) in
+    {65}let NONCE: nonce = Constant in
+    {66}let OKM_1: bitstring = HKDF_2(CK_0_A,NONCE) in
+    {67}let (CK_1_A: chainKey,MK_1_A: msgKey) = (fistPart(OKM_1),nextPart(OKM_1)) in
+    {68}event evRequesterCalcMessagerKey(MK_1_A);
+    {69}let OKM_2: bitstring = HKDF(MK_1_A) in
+    {70}let (encKey_1_A: msgKey,authKey_1_A: authKey,iv: nonce) = (fist256bits(OKM_2),next256bits(OKM_2),last256bits(OKM_2)) in
+    {71}let cipherTextRequester: bitstring = ENCRYPT(encKey_1_A,plainTextRequester,iv) in
+    {72}out(ch_c2c, (cipherTextRequester,computeSignature(authKey_1_A,cipherTextRequester,associatedData)));
+    {73}event evRequesterSendCipherText(cipherTextRequester);
+    {74}in(ch_c2c, (cipherTextResponder: bitstring,signature: bitstring));
+    {75}event evRequesterReceiveCipherText(cipherTextResponder);
+    {76}let DH_SK_1: privateKey = skey_DH_A in
+    {77}let OKM_3: bitstring = HKDF_3(RK_1_A,DH_SK_1,pk_DH_B_1) in
+    {78}let (RK_2_A: rootKey,CK_1_A_1: chainKey) = (fist256bit(OKM_3),next256bit(OKM_3)) in
+    {79}let NONCE_1: nonce = Constant in
+    {80}let OKM_4: bitstring = HKDF_2(CK_1_A_1,NONCE_1) in
+    {81}let (CK_2_A: chainKey,MK_2_A: msgKey) = (fistPart(OKM_4),nextPart(OKM_4)) in
+    {82}let OKM_5: bitstring = HKDF(MK_2_A) in
+    {83}let (encKey_2_A: msgKey,authKey_2_A: authKey,ignored_v: nonce) = (fist256bits(OKM_5),next256bits(OKM_5),last256bits(OKM_5)) in
+    {84}if (signature = computeSignature(authKey_2_A,cipherTextResponder,associatedData)) then
+    {85}let plainTextResponder_1: bitstring = DECRYPT(encKey_2_A,cipherTextResponder,associatedData) in
+    {86}event evRequesterDecryptCipherText(cipherTextResponder)
+) | (
+    {88}!
+    {116}get step3_table_responder(skey_DH_B_1: privateKey,pk_DH_B_2: publicKey) in
+    {115}get step2_table_responder(SK_B_1: sharedKey) in
+    {89}let init_RK_B: sharedKey = SK_B_1 in
+    {90}in(ch_c2c, pk_DH_A_1: publicKey);
+    {91}let init_RK_B_1: rootKey = SK_B_1 in
+    {92}let OKM_6: bitstring = HKDF_3(init_RK_B_1,skey_DH_B_1,pk_DH_A_1) in
+    {93}let (RK_1_B: rootKey,CK_0_B: chainKey) = (fist256bit(OKM_6),next256bit(OKM_6)) in
+    {94}let NONCE_2: nonce = Constant in
+    {95}let OKM_7: bitstring = HKDF_2(CK_0_B,NONCE_2) in
+    {96}let (CK_1_B: chainKey,MK_1_B: msgKey) = (fistPart(OKM_7),nextPart(OKM_7)) in
+    {97}event evResponderCalcMessagerKey(MK_1_B);
+    {98}in(ch_c2c, (cipherTextRequester_1: bitstring,signature_1: bitstring));
+    {99}event evResponderReceiveCipherText(cipherTextRequester_1);
+    {100}let OKM_8: bitstring = HKDF(MK_1_B) in
+    {101}let (encKey_1_B: msgKey,authKey_1_B: authKey,ignored_v_1: nonce) = (fist256bits(OKM_8),next256bits(OKM_8),last256bits(OKM_8)) in
+    {102}if (signature_1 = computeSignature(authKey_1_B,cipherTextRequester_1,associatedData)) then
+    {103}let plainTextRequester_1: bitstring = DECRYPT(encKey_1_B,cipherTextRequester_1,associatedData) in
+    {104}event evResponderDecryptCipherText_2(cipherTextRequester_1);
+    {105}let OKM_9: bitstring = HKDF_3(RK_1_B,skey_DH_B_1,pk_DH_A_1) in
+    {106}let (RK_2_B: rootKey,CK_1_B_1: chainKey) = (fist256bit(OKM_9),next256bit(OKM_9)) in
+    {107}let NONCE_3: nonce = Constant in
+    {108}let OKM_10: bitstring = HKDF_2(CK_1_B_1,NONCE_3) in
+    {109}let (CK_2_B: chainKey,MK_2_B: msgKey) = (fistPart(OKM_10),nextPart(OKM_10)) in
+    {110}let OKM_11: bitstring = HKDF(MK_2_B) in
+    {111}let (encKey_2_B: msgKey,authKey_2_B: authKey,iv_1: nonce) = (fist256bits(OKM_11),next256bits(OKM_11),last256bits(OKM_11)) in
+    {112}let cipherTextResponder_1: bitstring = ENCRYPT(encKey_2_B,plainTextResponder,iv_1) in
+    {113}out(ch_c2c, (cipherTextResponder_1,computeSignature(authKey_2_B,cipherTextResponder_1,associatedData)));
+    {114}event evResponderSendCipherText(cipherTextResponder_1)
+)
+
+--  Process 1 (that is, process 0, with let moved downwards):
+{1}new skey_IK_A: privateKey;
+{2}new skey_IK_B: privateKey;
+(
+    {3}!
+    {6}new sk_SPK_B: privateKey;
+    {7}let SPK_B: signKey = signKeyGen(sk_SPK_B) in
+    {4}let skey_IK_B_1: privateKey = skey_IK_B in
+    {8}let signature_B: bitstring = SignBundle(Encode(SPK_B),skey_IK_B_1) in
+    {5}let pk_IK_B: publicKey = pk(skey_IK_B_1) in
+    {9}out(ch_c2s, (pk_IK_B,SPK_B,signature_B));
+    {10}event evResponderSendKeys(pk_IK_B,SPK_B,signature_B);
+    {11}insert step0_table_responder(skey_IK_B_1,sk_SPK_B,pk_IK_B)
+) | (
+    {12}!
+    {13}in(ch_c2s, (pk_IK_B_1: publicKey,SPK_B_1: signKey,signature_B_1: bitstring));
+    {14}out(ch_s2c, (pk_IK_B_1,SPK_B_1,signature_B_1))
+) | (
+    {15}!
+    {17}in(ch_s2c, (pk_IK_B_2: publicKey,SPK_B_2: signKey,signature_B_2: bitstring));
+    {18}event evRequesterReceiveKeys(pk_IK_B_2,SPK_B_2,signature_B_2);
+    {19}if (True = VerifySignature(signature_B_2,SPK_B_2)) then
+    {20}new skey_EK_A: privateKey;
+    {26}let sk_1: privateKey = skey_EK_A in
+    {27}let DH3_A: G = sca(sk_1,SPK_B_2) in
+    {24}let sk: privateKey = skey_EK_A in
+    {25}let DH2_A: G = sca(sk,pk_IK_B_2) in
+    {16}let skey_IK_A_1: privateKey = skey_IK_A in
+    {23}let DH1_A: G = sca(skey_IK_A_1,SPK_B_2) in
+    {28}let SK_A: sharedKey = KDF(DH1_A,DH2_A,DH3_A) in
+    {29}event evRequesterCalcSharedKey(SK_A);
+    {21}let pk_IK_A: publicKey = pk(skey_IK_A_1) in
+    {30}let AD_A: bitstring = concat2(Encode(pk_IK_A),Encode(pk_IK_B_2)) in
+    {31}let initial_ciphertext_A: bitstring = AEAD(initialPlainTextRequester,AD_A,SK_A) in
+    {32}event evRequesterEncryptPlainText(initial_ciphertext_A);
+    {22}let pk_EK_A: publicKey = pk(skey_EK_A) in
+    {33}out(ch_c2c, (pk_IK_A,pk_EK_A,initial_ciphertext_A,AD_A));
+    {34}event evRequesterSendKeys(pk_IK_A,pk_EK_A);
+    {35}insert step1_table_requester(SK_A)
+) | (
+    {36}!
+    {48}get step0_table_responder(skey_IK_B_2: privateKey,sk_SPK_B_1: privateKey,pk_IK_B_3: publicKey) in
+    {37}in(ch_c2c, (pk_IK_A_1: publicKey,pk_EK_A_1: publicKey,initial_ciphertext_A_1: bitstring,AD_A_1: bitstring));
+    {40}let DH3_B: G = sca(sk_SPK_B_1,pk_EK_A_1) in
+    {39}let DH2_B: G = sca(skey_IK_B_2,pk_IK_A_1) in
+    {38}let DH1_B: G = sca(sk_SPK_B_1,pk_IK_A_1) in
+    {41}let SK_B: sharedKey = KDF(DH1_B,DH2_B,DH3_B) in
+    {42}event evResponderCalcSharedKey(SK_B);
+    {43}let AD_B: bitstring = concat2(Encode(pk_IK_A_1),Encode(pk_IK_B_3)) in
+    {44}if (AD_B = AD_A_1) then
+    {45}let initialPlainTextRequester_1: bitstring = AEAD(initial_ciphertext_A_1,AD_B,SK_B) in
+    {46}event evResponderDecryptCipherText(initialPlainTextRequester_1);
+    {47}insert step2_table_responder(SK_B)
+) | (
+    {49}!
+    {50}new skey_DH_B: privateKey;
+    {51}let pk_DH_B: publicKey = pk(skey_DH_B) in
+    {52}out(ch_c2c, pk_DH_B);
+    {53}event evResponderSendDHKey(pk_DH_B);
+    {54}insert step3_table_responder(skey_DH_B,pk_DH_B)
+) | (
+    {55}!
+    {56}in(ch_c2c, pk_DH_B_1: publicKey);
+    {57}new skey_DH_A: privateKey;
+    {58}let pk_DH_A: publicKey = pk(skey_DH_A) in
+    {59}out(ch_c2c, pk_DH_A);
+    {60}event evRequesterSendDHKey(pk_DH_A);
+    {87}get step1_table_requester(SK_A_1: sharedKey) in
+    {62}let DH_SK: privateKey = skey_DH_A in
+    {61}let init_RK_A: rootKey = SK_A_1 in
+    {63}let OKM: bitstring = HKDF_3(init_RK_A,DH_SK,pk_DH_B_1) in
+    {64}let (RK_1_A: rootKey,CK_0_A: chainKey) = (fist256bit(OKM),next256bit(OKM)) in
+    {65}let NONCE: nonce = Constant in
+    {66}let OKM_1: bitstring = HKDF_2(CK_0_A,NONCE) in
+    {67}let (CK_1_A: chainKey,MK_1_A: msgKey) = (fistPart(OKM_1),nextPart(OKM_1)) in
+    {68}event evRequesterCalcMessagerKey(MK_1_A);
+    {69}let OKM_2: bitstring = HKDF(MK_1_A) in
+    {70}let (encKey_1_A: msgKey,authKey_1_A: authKey,iv: nonce) = (fist256bits(OKM_2),next256bits(OKM_2),last256bits(OKM_2)) in
+    {71}let cipherTextRequester: bitstring = ENCRYPT(encKey_1_A,plainTextRequester,iv) in
+    {72}out(ch_c2c, (cipherTextRequester,computeSignature(authKey_1_A,cipherTextRequester,associatedData)));
+    {73}event evRequesterSendCipherText(cipherTextRequester);
+    {74}in(ch_c2c, (cipherTextResponder: bitstring,signature: bitstring));
+    {75}event evRequesterReceiveCipherText(cipherTextResponder);
+    {76}let DH_SK_1: privateKey = skey_DH_A in
+    {77}let OKM_3: bitstring = HKDF_3(RK_1_A,DH_SK_1,pk_DH_B_1) in
+    {78}let (RK_2_A: rootKey,CK_1_A_1: chainKey) = (fist256bit(OKM_3),next256bit(OKM_3)) in
+    {79}let NONCE_1: nonce = Constant in
+    {80}let OKM_4: bitstring = HKDF_2(CK_1_A_1,NONCE_1) in
+    {81}let (CK_2_A: chainKey,MK_2_A: msgKey) = (fistPart(OKM_4),nextPart(OKM_4)) in
+    {82}let OKM_5: bitstring = HKDF(MK_2_A) in
+    {83}let (encKey_2_A: msgKey,authKey_2_A: authKey,ignored_v: nonce) = (fist256bits(OKM_5),next256bits(OKM_5),last256bits(OKM_5)) in
+    {84}if (signature = computeSignature(authKey_2_A,cipherTextResponder,associatedData)) then
+    {86}event evRequesterDecryptCipherText(cipherTextResponder)
+) | (
+    {88}!
+    {116}get step3_table_responder(skey_DH_B_1: privateKey,pk_DH_B_2: publicKey) in
+    {115}get step2_table_responder(SK_B_1: sharedKey) in
+    {90}in(ch_c2c, pk_DH_A_1: publicKey);
+    {91}let init_RK_B_1: rootKey = SK_B_1 in
+    {92}let OKM_6: bitstring = HKDF_3(init_RK_B_1,skey_DH_B_1,pk_DH_A_1) in
+    {93}let (RK_1_B: rootKey,CK_0_B: chainKey) = (fist256bit(OKM_6),next256bit(OKM_6)) in
+    {94}let NONCE_2: nonce = Constant in
+    {95}let OKM_7: bitstring = HKDF_2(CK_0_B,NONCE_2) in
+    {96}let (CK_1_B: chainKey,MK_1_B: msgKey) = (fistPart(OKM_7),nextPart(OKM_7)) in
+    {97}event evResponderCalcMessagerKey(MK_1_B);
+    {98}in(ch_c2c, (cipherTextRequester_1: bitstring,signature_1: bitstring));
+    {99}event evResponderReceiveCipherText(cipherTextRequester_1);
+    {100}let OKM_8: bitstring = HKDF(MK_1_B) in
+    {101}let (encKey_1_B: msgKey,authKey_1_B: authKey,ignored_v_1: nonce) = (fist256bits(OKM_8),next256bits(OKM_8),last256bits(OKM_8)) in
+    {102}if (signature_1 = computeSignature(authKey_1_B,cipherTextRequester_1,associatedData)) then
+    {104}event evResponderDecryptCipherText_2(cipherTextRequester_1);
+    {105}let OKM_9: bitstring = HKDF_3(RK_1_B,skey_DH_B_1,pk_DH_A_1) in
+    {106}let (RK_2_B: rootKey,CK_1_B_1: chainKey) = (fist256bit(OKM_9),next256bit(OKM_9)) in
+    {107}let NONCE_3: nonce = Constant in
+    {108}let OKM_10: bitstring = HKDF_2(CK_1_B_1,NONCE_3) in
+    {109}let (CK_2_B: chainKey,MK_2_B: msgKey) = (fistPart(OKM_10),nextPart(OKM_10)) in
+    {110}let OKM_11: bitstring = HKDF(MK_2_B) in
+    {111}let (encKey_2_B: msgKey,authKey_2_B: authKey,iv_1: nonce) = (fist256bits(OKM_11),next256bits(OKM_11),last256bits(OKM_11)) in
+    {112}let cipherTextResponder_1: bitstring = ENCRYPT(encKey_2_B,plainTextResponder,iv_1) in
+    {113}out(ch_c2c, (cipherTextResponder_1,computeSignature(authKey_2_B,cipherTextResponder_1,associatedData)));
+    {114}event evResponderSendCipherText(cipherTextResponder_1)
+)
+
+-- Query event(evResponderCalcSharedKey(SK)) ==> event(evRequesterSendKeys(pk_IK,pk_EK)) in process 1.
+Translating the process into Horn clauses...
+Completing...
+200 rules inserted. Base: 183 rules (64 with conclusion selected). Queue: 16 rules.
+Starting query event(evResponderCalcSharedKey(SK)) ==> event(evRequesterSendKeys(pk_IK,pk_EK))
+goal reachable: attacker(pk_IK_A_2) && attacker(y) -> event(evResponderCalcSharedKey(KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(y,sca(sk_SPK_B_2,P)))))
+Abbreviations:
+sk_SPK_B_2 = sk_SPK_B[!1 = @sid]
+
+Derivation:
+Abbreviations:
+sk_SPK_B_2 = sk_SPK_B[!1 = @sid]
+
+1. The entry step0_table_responder(skey_IK_B[],sk_SPK_B_2,pk(skey_IK_B[])) may be inserted in a table at insert {11}.
+table(step0_table_responder(skey_IK_B[],sk_SPK_B_2,pk(skey_IK_B[]))).
+
+2. The attacker has some term AD_A_2.
+attacker(AD_A_2).
+
+3. The attacker has some term initial_ciphertext_A_2.
+attacker(initial_ciphertext_A_2).
+
+4. Using the function P the attacker may obtain P.
+attacker(P).
+
+5. We assume as hypothesis that
+attacker(y).
+
+6. By 5, the attacker may know y.
+By 4, the attacker may know P.
+Using the function sca the attacker may obtain sca(y,P).
+attacker(sca(y,P)).
+
+7. We assume as hypothesis that
+attacker(pk_IK_A_2).
+
+8. By 7, the attacker may know pk_IK_A_2.
+By 6, the attacker may know sca(y,P).
+By 3, the attacker may know initial_ciphertext_A_2.
+By 2, the attacker may know AD_A_2.
+Using the function 4-tuple the attacker may obtain (pk_IK_A_2,sca(y,P),initial_ciphertext_A_2,AD_A_2).
+attacker((pk_IK_A_2,sca(y,P),initial_ciphertext_A_2,AD_A_2)).
+
+9. The entry step0_table_responder(skey_IK_B[],sk_SPK_B_2,pk(skey_IK_B[])) that may be in a table by 1 may be read at get {48}.
+The message (pk_IK_A_2,sca(y,P),initial_ciphertext_A_2,AD_A_2) that the attacker may have by 8 may be received at input {37}.
+So event evResponderCalcSharedKey(KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(y,sca(sk_SPK_B_2,P)))) may be executed at {42}.
+event(evResponderCalcSharedKey(KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(y,sca(sk_SPK_B_2,P))))).
+
+10. By 9, event(evResponderCalcSharedKey(KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(y,sca(sk_SPK_B_2,P))))).
+The goal is reached, represented in the following fact:
+event(evResponderCalcSharedKey(KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(y,sca(sk_SPK_B_2,P))))).
+
+
+A more detailed output of the traces is available with
+  set traceDisplay = long.
+
+new skey_IK_A: privateKey creating skey_IK_A_2 at {1}
+
+new skey_IK_B: privateKey creating skey_IK_B_3 at {2}
+
+new sk_SPK_B: privateKey creating sk_SPK_B_3 at {6} in copy a
+
+out(ch_c2s, (~M,~M_1,~M_2)) with ~M = pk(skey_IK_B_3), ~M_1 = signKeyGen(sk_SPK_B_3), ~M_2 = SignBundle(Encode(signKeyGen(sk_SPK_B_3)),skey_IK_B_3) at {9} in copy a
+
+event evResponderSendKeys(pk(skey_IK_B_3),signKeyGen(sk_SPK_B_3),SignBundle(Encode(signKeyGen(sk_SPK_B_3)),skey_IK_B_3)) at {10} in copy a
+
+insert step0_table_responder(skey_IK_B_3,sk_SPK_B_3,pk(skey_IK_B_3)) at {11} in copy a
+
+get step0_table_responder(skey_IK_B_3,sk_SPK_B_3,pk(skey_IK_B_3)) at {48} in copy a_1
+
+in(ch_c2c, (a_2,sca(a_3,P),a_4,a_5)) at {37} in copy a_1
+
+event evResponderCalcSharedKey(KDF(sca(sk_SPK_B_3,a_2),sca(skey_IK_B_3,a_2),sca(sk_SPK_B_3,sca(a_3,P)))) at {42} in copy a_1 (goal)
+
+The event evResponderCalcSharedKey(KDF(sca(sk_SPK_B_3,a_2),sca(skey_IK_B_3,a_2),sca(a_3,sca(sk_SPK_B_3,P)))) is executed at {42} in copy a_1.
+A trace has been found.
+RESULT event(evResponderCalcSharedKey(SK)) ==> event(evRequesterSendKeys(pk_IK,pk_EK)) is false.
+-- Query event(evResponderCalcMessagerKey(MK)) ==> event(evRequesterSendDHKey(pk_DH)) || event(evRequesterSendKeys(pk_IK,pk_EK)) in process 1.
+Translating the process into Horn clauses...
+Completing...
+200 rules inserted. Base: 183 rules (64 with conclusion selected). Queue: 16 rules.
+Starting query event(evResponderCalcMessagerKey(MK)) ==> event(evRequesterSendDHKey(pk_DH)) || event(evRequesterSendKeys(pk_IK,pk_EK))
+goal reachable: attacker(pk_DH_A_2) && attacker(pk_EK_A_2) && attacker(pk_IK_A_2) -> event(evResponderCalcMessagerKey(nextPart(HKDF_2(next256bit(HKDF_3(KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(sk_SPK_B_2,pk_EK_A_2)),skey_DH_B_2,pk_DH_A_2)),Constant))))
+Abbreviations:
+sk_SPK_B_2 = sk_SPK_B[!1 = @sid]
+skey_DH_B_2 = skey_DH_B[!1 = @sid_1]
+
+Derivation:
+Abbreviations:
+sk_SPK_B_2 = sk_SPK_B[!1 = @sid]
+skey_DH_B_2 = skey_DH_B[!1 = @sid_1]
+sk_SPK_B_3 = sk_SPK_B[!1 = @sid_2]
+
+1. The entry step3_table_responder(skey_DH_B_2,pk(skey_DH_B_2)) may be inserted in a table at insert {54}.
+table(step3_table_responder(skey_DH_B_2,pk(skey_DH_B_2))).
+
+2. The entry step0_table_responder(skey_IK_B[],sk_SPK_B_2,pk(skey_IK_B[])) may be inserted in a table at insert {11}.
+table(step0_table_responder(skey_IK_B[],sk_SPK_B_2,pk(skey_IK_B[]))).
+
+3. The message (pk(skey_IK_B[]),signKeyGen(sk_SPK_B_3),SignBundle(Encode(signKeyGen(sk_SPK_B_3)),skey_IK_B[])) may be sent to the attacker at output {9}.
+attacker((pk(skey_IK_B[]),signKeyGen(sk_SPK_B_3),SignBundle(Encode(signKeyGen(sk_SPK_B_3)),skey_IK_B[]))).
+
+4. By 3, the attacker may know (pk(skey_IK_B[]),signKeyGen(sk_SPK_B_3),SignBundle(Encode(signKeyGen(sk_SPK_B_3)),skey_IK_B[])).
+Using the function 1-proj-3-tuple the attacker may obtain pk(skey_IK_B[]).
+attacker(pk(skey_IK_B[])).
+
+5. By 4, the attacker may know pk(skey_IK_B[]).
+Using the function Encode the attacker may obtain Encode(pk(skey_IK_B[])).
+attacker(Encode(pk(skey_IK_B[]))).
+
+6. We assume as hypothesis that
+attacker(pk_IK_A_2).
+
+7. By 6, the attacker may know pk_IK_A_2.
+Using the function Encode the attacker may obtain Encode(pk_IK_A_2).
+attacker(Encode(pk_IK_A_2)).
+
+8. By 7, the attacker may know Encode(pk_IK_A_2).
+By 5, the attacker may know Encode(pk(skey_IK_B[])).
+Using the function concat2 the attacker may obtain concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[]))).
+attacker(concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[])))).
+
+9. The attacker has some term initial_ciphertext_A_2.
+attacker(initial_ciphertext_A_2).
+
+10. We assume as hypothesis that
+attacker(pk_EK_A_2).
+
+11. By 6, the attacker may know pk_IK_A_2.
+By 10, the attacker may know pk_EK_A_2.
+By 9, the attacker may know initial_ciphertext_A_2.
+By 8, the attacker may know concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[]))).
+Using the function 4-tuple the attacker may obtain (pk_IK_A_2,pk_EK_A_2,initial_ciphertext_A_2,concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[])))).
+attacker((pk_IK_A_2,pk_EK_A_2,initial_ciphertext_A_2,concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[]))))).
+
+12. The entry step0_table_responder(skey_IK_B[],sk_SPK_B_2,pk(skey_IK_B[])) that may be in a table by 2 may be read at get {48}.
+The message (pk_IK_A_2,pk_EK_A_2,initial_ciphertext_A_2,concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[])))) that the attacker may have by 11 may be received at input {37}.
+So the entry step2_table_responder(KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(sk_SPK_B_2,pk_EK_A_2))) may be inserted in a table at insert {47}.
+table(step2_table_responder(KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(sk_SPK_B_2,pk_EK_A_2)))).
+
+13. We assume as hypothesis that
+attacker(pk_DH_A_2).
+
+14. The entry step3_table_responder(skey_DH_B_2,pk(skey_DH_B_2)) that may be in a table by 1 may be read at get {116}.
+The entry step2_table_responder(KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(sk_SPK_B_2,pk_EK_A_2))) that may be in a table by 12 may be read at get {115}.
+The message pk_DH_A_2 that the attacker may have by 13 may be received at input {90}.
+So event evResponderCalcMessagerKey(nextPart(HKDF_2(next256bit(HKDF_3(KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(sk_SPK_B_2,pk_EK_A_2)),skey_DH_B_2,pk_DH_A_2)),Constant))) may be executed at {97}.
+event(evResponderCalcMessagerKey(nextPart(HKDF_2(next256bit(HKDF_3(KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(sk_SPK_B_2,pk_EK_A_2)),skey_DH_B_2,pk_DH_A_2)),Constant)))).
+
+15. By 14, event(evResponderCalcMessagerKey(nextPart(HKDF_2(next256bit(HKDF_3(KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(sk_SPK_B_2,pk_EK_A_2)),skey_DH_B_2,pk_DH_A_2)),Constant)))).
+The goal is reached, represented in the following fact:
+event(evResponderCalcMessagerKey(nextPart(HKDF_2(next256bit(HKDF_3(KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(sk_SPK_B_2,pk_EK_A_2)),skey_DH_B_2,pk_DH_A_2)),Constant)))).
+
+
+A more detailed output of the traces is available with
+  set traceDisplay = long.
+
+new skey_IK_A: privateKey creating skey_IK_A_2 at {1}
+
+new skey_IK_B: privateKey creating skey_IK_B_3 at {2}
+
+new skey_DH_B: privateKey creating skey_DH_B_3 at {50} in copy a
+
+out(ch_c2c, ~M) with ~M = pk(skey_DH_B_3) at {52} in copy a
+
+event evResponderSendDHKey(pk(skey_DH_B_3)) at {53} in copy a
+
+insert step3_table_responder(skey_DH_B_3,pk(skey_DH_B_3)) at {54} in copy a
+
+new sk_SPK_B: privateKey creating sk_SPK_B_4 at {6} in copy a_1
+
+out(ch_c2s, (~M_1,~M_2,~M_3)) with ~M_1 = pk(skey_IK_B_3), ~M_2 = signKeyGen(sk_SPK_B_4), ~M_3 = SignBundle(Encode(signKeyGen(sk_SPK_B_4)),skey_IK_B_3) at {9} in copy a_1
+
+event evResponderSendKeys(pk(skey_IK_B_3),signKeyGen(sk_SPK_B_4),SignBundle(Encode(signKeyGen(sk_SPK_B_4)),skey_IK_B_3)) at {10} in copy a_1
+
+insert step0_table_responder(skey_IK_B_3,sk_SPK_B_4,pk(skey_IK_B_3)) at {11} in copy a_1
+
+new sk_SPK_B: privateKey creating sk_SPK_B_5 at {6} in copy a_2
+
+out(ch_c2s, (~M_4,~M_5,~M_6)) with ~M_4 = pk(skey_IK_B_3), ~M_5 = signKeyGen(sk_SPK_B_5), ~M_6 = SignBundle(Encode(signKeyGen(sk_SPK_B_5)),skey_IK_B_3) at {9} in copy a_2
+
+event evResponderSendKeys(pk(skey_IK_B_3),signKeyGen(sk_SPK_B_5),SignBundle(Encode(signKeyGen(sk_SPK_B_5)),skey_IK_B_3)) at {10} in copy a_2
+
+insert step0_table_responder(skey_IK_B_3,sk_SPK_B_5,pk(skey_IK_B_3)) at {11} in copy a_2
+
+get step0_table_responder(skey_IK_B_3,sk_SPK_B_4,pk(skey_IK_B_3)) at {48} in copy a_3
+
+in(ch_c2c, (a_4,a_5,a_6,concat2(Encode(a_4),Encode(~M_1)))) with concat2(Encode(a_4),Encode(~M_1)) = concat2(Encode(a_4),Encode(pk(skey_IK_B_3))) at {37} in copy a_3
+
+event evResponderCalcSharedKey(KDF(sca(sk_SPK_B_4,a_4),sca(skey_IK_B_3,a_4),sca(sk_SPK_B_4,a_5))) at {42} in copy a_3
+
+event evResponderDecryptCipherText(AEAD(a_6,concat2(Encode(a_4),Encode(pk(skey_IK_B_3))),KDF(sca(sk_SPK_B_4,a_4),sca(skey_IK_B_3,a_4),sca(sk_SPK_B_4,a_5)))) at {46} in copy a_3
+
+insert step2_table_responder(KDF(sca(sk_SPK_B_4,a_4),sca(skey_IK_B_3,a_4),sca(sk_SPK_B_4,a_5))) at {47} in copy a_3
+
+get step3_table_responder(skey_DH_B_3,pk(skey_DH_B_3)) at {116} in copy a_7
+
+get step2_table_responder(KDF(sca(sk_SPK_B_4,a_4),sca(skey_IK_B_3,a_4),sca(sk_SPK_B_4,a_5))) at {115} in copy a_7
+
+in(ch_c2c, a_8) at {90} in copy a_7
+
+event evResponderCalcMessagerKey(nextPart(HKDF_2(next256bit(HKDF_3(KDF(sca(sk_SPK_B_4,a_4),sca(skey_IK_B_3,a_4),sca(sk_SPK_B_4,a_5)),skey_DH_B_3,a_8)),Constant))) at {97} in copy a_7 (goal)
+
+The event evResponderCalcMessagerKey(nextPart(HKDF_2(next256bit(HKDF_3(KDF(sca(sk_SPK_B_4,a_4),sca(skey_IK_B_3,a_4),sca(sk_SPK_B_4,a_5)),skey_DH_B_3,a_8)),Constant))) is executed at {97} in copy a_7.
+A trace has been found.
+RESULT event(evResponderCalcMessagerKey(MK)) ==> event(evRequesterSendDHKey(pk_DH)) || event(evRequesterSendKeys(pk_IK,pk_EK)) is false.
+-- Query event(evResponderDecryptCipherText(cipherText)) ==> event(evRequesterSendCipherText(cipherText)) in process 1.
+Translating the process into Horn clauses...
+Completing...
+200 rules inserted. Base: 167 rules (64 with conclusion selected). Queue: 16 rules.
+Starting query event(evResponderDecryptCipherText(cipherText)) ==> event(evRequesterSendCipherText(cipherText))
+goal reachable: attacker(pk_EK_A_2) && attacker(initial_ciphertext_A_2) && attacker(pk_IK_A_2) -> event(evResponderDecryptCipherText(AEAD(initial_ciphertext_A_2,concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[]))),KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(sk_SPK_B_2,pk_EK_A_2)))))
+Abbreviations:
+sk_SPK_B_2 = sk_SPK_B[!1 = @sid]
+
+Derivation:
+Abbreviations:
+sk_SPK_B_2 = sk_SPK_B[!1 = @sid]
+sk_SPK_B_3 = sk_SPK_B[!1 = @sid_1]
+
+1. The entry step0_table_responder(skey_IK_B[],sk_SPK_B_2,pk(skey_IK_B[])) may be inserted in a table at insert {11}.
+table(step0_table_responder(skey_IK_B[],sk_SPK_B_2,pk(skey_IK_B[]))).
+
+2. The message (pk(skey_IK_B[]),signKeyGen(sk_SPK_B_3),SignBundle(Encode(signKeyGen(sk_SPK_B_3)),skey_IK_B[])) may be sent to the attacker at output {9}.
+attacker((pk(skey_IK_B[]),signKeyGen(sk_SPK_B_3),SignBundle(Encode(signKeyGen(sk_SPK_B_3)),skey_IK_B[]))).
+
+3. By 2, the attacker may know (pk(skey_IK_B[]),signKeyGen(sk_SPK_B_3),SignBundle(Encode(signKeyGen(sk_SPK_B_3)),skey_IK_B[])).
+Using the function 1-proj-3-tuple the attacker may obtain pk(skey_IK_B[]).
+attacker(pk(skey_IK_B[])).
+
+4. By 3, the attacker may know pk(skey_IK_B[]).
+Using the function Encode the attacker may obtain Encode(pk(skey_IK_B[])).
+attacker(Encode(pk(skey_IK_B[]))).
+
+5. We assume as hypothesis that
+attacker(pk_IK_A_2).
+
+6. By 5, the attacker may know pk_IK_A_2.
+Using the function Encode the attacker may obtain Encode(pk_IK_A_2).
+attacker(Encode(pk_IK_A_2)).
+
+7. By 6, the attacker may know Encode(pk_IK_A_2).
+By 4, the attacker may know Encode(pk(skey_IK_B[])).
+Using the function concat2 the attacker may obtain concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[]))).
+attacker(concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[])))).
+
+8. We assume as hypothesis that
+attacker(initial_ciphertext_A_2).
+
+9. We assume as hypothesis that
+attacker(pk_EK_A_2).
+
+10. By 5, the attacker may know pk_IK_A_2.
+By 9, the attacker may know pk_EK_A_2.
+By 8, the attacker may know initial_ciphertext_A_2.
+By 7, the attacker may know concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[]))).
+Using the function 4-tuple the attacker may obtain (pk_IK_A_2,pk_EK_A_2,initial_ciphertext_A_2,concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[])))).
+attacker((pk_IK_A_2,pk_EK_A_2,initial_ciphertext_A_2,concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[]))))).
+
+11. The entry step0_table_responder(skey_IK_B[],sk_SPK_B_2,pk(skey_IK_B[])) that may be in a table by 1 may be read at get {48}.
+The message (pk_IK_A_2,pk_EK_A_2,initial_ciphertext_A_2,concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[])))) that the attacker may have by 10 may be received at input {37}.
+So event evResponderDecryptCipherText(AEAD(initial_ciphertext_A_2,concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[]))),KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(sk_SPK_B_2,pk_EK_A_2)))) may be executed at {46}.
+event(evResponderDecryptCipherText(AEAD(initial_ciphertext_A_2,concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[]))),KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(sk_SPK_B_2,pk_EK_A_2))))).
+
+12. By 11, event(evResponderDecryptCipherText(AEAD(initial_ciphertext_A_2,concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[]))),KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(sk_SPK_B_2,pk_EK_A_2))))).
+The goal is reached, represented in the following fact:
+event(evResponderDecryptCipherText(AEAD(initial_ciphertext_A_2,concat2(Encode(pk_IK_A_2),Encode(pk(skey_IK_B[]))),KDF(sca(sk_SPK_B_2,pk_IK_A_2),sca(skey_IK_B[],pk_IK_A_2),sca(sk_SPK_B_2,pk_EK_A_2))))).
+
+
+A more detailed output of the traces is available with
+  set traceDisplay = long.
+
+new skey_IK_A: privateKey creating skey_IK_A_2 at {1}
+
+new skey_IK_B: privateKey creating skey_IK_B_3 at {2}
+
+new sk_SPK_B: privateKey creating sk_SPK_B_4 at {6} in copy a
+
+out(ch_c2s, (~M,~M_1,~M_2)) with ~M = pk(skey_IK_B_3), ~M_1 = signKeyGen(sk_SPK_B_4), ~M_2 = SignBundle(Encode(signKeyGen(sk_SPK_B_4)),skey_IK_B_3) at {9} in copy a
+
+event evResponderSendKeys(pk(skey_IK_B_3),signKeyGen(sk_SPK_B_4),SignBundle(Encode(signKeyGen(sk_SPK_B_4)),skey_IK_B_3)) at {10} in copy a
+
+insert step0_table_responder(skey_IK_B_3,sk_SPK_B_4,pk(skey_IK_B_3)) at {11} in copy a
+
+new sk_SPK_B: privateKey creating sk_SPK_B_5 at {6} in copy a_1
+
+out(ch_c2s, (~M_3,~M_4,~M_5)) with ~M_3 = pk(skey_IK_B_3), ~M_4 = signKeyGen(sk_SPK_B_5), ~M_5 = SignBundle(Encode(signKeyGen(sk_SPK_B_5)),skey_IK_B_3) at {9} in copy a_1
+
+event evResponderSendKeys(pk(skey_IK_B_3),signKeyGen(sk_SPK_B_5),SignBundle(Encode(signKeyGen(sk_SPK_B_5)),skey_IK_B_3)) at {10} in copy a_1
+
+insert step0_table_responder(skey_IK_B_3,sk_SPK_B_5,pk(skey_IK_B_3)) at {11} in copy a_1
+
+get step0_table_responder(skey_IK_B_3,sk_SPK_B_4,pk(skey_IK_B_3)) at {48} in copy a_2
+
+in(ch_c2c, (a_3,a_4,a_5,concat2(Encode(a_3),Encode(~M)))) with concat2(Encode(a_3),Encode(~M)) = concat2(Encode(a_3),Encode(pk(skey_IK_B_3))) at {37} in copy a_2
+
+event evResponderCalcSharedKey(KDF(sca(sk_SPK_B_4,a_3),sca(skey_IK_B_3,a_3),sca(sk_SPK_B_4,a_4))) at {42} in copy a_2
+
+event evResponderDecryptCipherText(AEAD(a_5,concat2(Encode(a_3),Encode(pk(skey_IK_B_3))),KDF(sca(sk_SPK_B_4,a_3),sca(skey_IK_B_3,a_3),sca(sk_SPK_B_4,a_4)))) at {46} in copy a_2 (goal)
+
+The event evResponderDecryptCipherText(AEAD(a_5,concat2(Encode(a_3),Encode(pk(skey_IK_B_3))),KDF(sca(sk_SPK_B_4,a_3),sca(skey_IK_B_3,a_3),sca(sk_SPK_B_4,a_4)))) is executed at {46} in copy a_2.
+A trace has been found.
+RESULT event(evResponderDecryptCipherText(cipherText)) ==> event(evRequesterSendCipherText(cipherText)) is false.
+-- Query not attacker(plainTextRequester[]) in process 1.
+Translating the process into Horn clauses...
+Completing...
+200 rules inserted. Base: 179 rules (56 with conclusion selected). Queue: 16 rules.
+Starting query not attacker(plainTextRequester[])
+RESULT not attacker(plainTextRequester[]) is true.
+-- Query not attacker(plainTextResponder[]) in process 1.
+Translating the process into Horn clauses...
+Completing...
+200 rules inserted. Base: 179 rules (56 with conclusion selected). Queue: 16 rules.
+Starting query not attacker(plainTextResponder[])
+RESULT not attacker(plainTextResponder[]) is true.
+
+--------------------------------------------------------------
+Verification summary:
+
+Query event(evResponderCalcSharedKey(SK)) ==> event(evRequesterSendKeys(pk_IK,pk_EK)) is false.
+
+Query event(evResponderCalcMessagerKey(MK)) ==> event(evRequesterSendDHKey(pk_DH)) || event(evRequesterSendKeys(pk_IK,pk_EK)) is false.
+
+Query event(evResponderDecryptCipherText(cipherText)) ==> event(evRequesterSendCipherText(cipherText)) is false.
+
+Query not attacker(plainTextRequester[]) is true.
+
+Query not attacker(plainTextResponder[]) is true.
+
+--------------------------------------------------------------
+
