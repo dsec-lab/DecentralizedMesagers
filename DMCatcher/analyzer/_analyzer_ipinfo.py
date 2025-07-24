@@ -141,17 +141,17 @@ if __name__ == '__main__':
     # ***********************************
     # step011: An IP corresponding to multi-Messagers
     # ***********************************
-    # 求任意两组之间的公共 IP
+    # Find the public IP between any two groups
     common_in_three = set()
     lists = [_list_matrix_ips_, _list_berty_ips_, _list_jami_ips_, _list_status_ips_]
-    for combo in combinations(lists, 2):  # 所有两组组合
+    for combo in combinations(lists, 2):  # All two group combinations
         intersection = set(combo[0]) & set(combo[1])
-        common_in_three.update(intersection)  # 将结果加入集合
-    print("至少在任意两组中共同存在的IP:", len(common_in_three))
+        common_in_three.update(intersection)  # 
+    print("IPs that exist in at least two groups:", len(common_in_three))
     # *******************************
     # step02: load ipinfo we detected
     # *******************************
-    ipinfo_data_dir = r'D:\科研数据\DecentralizedMessagers\DataNeedToAnalysis\ipinfo_response'
+    ipinfo_data_dir = r'\DecentralizedMessagers\DataNeedToAnalysis\ipinfo_response'
     ipinfo_analyzer = IpInfoAnalyzer()
     for file_name in os.listdir(ipinfo_data_dir):
         if file_name.endswith('.json'):
@@ -170,7 +170,7 @@ if __name__ == '__main__':
     # ***********************************
     # step03: load ipapi data we detected
     # ***********************************
-    ipapi_data_dir = r'D:\科研数据\DecentralizedMessagers\DataNeedToAnalysis\ip-api-response'
+    ipapi_data_dir = r'\DecentralizedMessagers\DataNeedToAnalysis\ip-api-response'
     isp_list = []
     for file_name in os.listdir(ipapi_data_dir):
         if file_name.endswith('.json'):
