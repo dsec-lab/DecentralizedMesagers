@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(name)s %(levelname)s %(message)s",
                     datefmt='%Y-%m-%d  %H:%M:%S %a')
 
-cves_file_dir = r'D:\科研数据\DecentralizedMessagers\DataNeedToAnalysis\cve.circl.lu-response'
+cves_file_dir = r'\DecentralizedMessagers\DataNeedToAnalysis\cve.circl.lu-response'
 
 class ShodanAnalyzer(object):
     def __init__(self):
@@ -185,7 +185,7 @@ if __name__ == '__main__':
     # *******************************
     # step02: load shodan we detected
     # *******************************
-    shodan_data_dir = r'D:\科研数据\DecentralizedMessagers\DataNeedToAnalysis\shodan_host_response'
+    shodan_data_dir = r'\DecentralizedMessagers\DataNeedToAnalysis\shodan_host_response'
     shodan_analyzer = ShodanAnalyzer()
     for file_name in os.listdir(shodan_data_dir):
         if file_name.endswith('.json'):
