@@ -1,4 +1,4 @@
 > [!IMPORTANT]
 >
-> Perform an in-depth analysis of decentralized messaging platforms from multiple dimensions, including architecture, performance, and security.
-> "Decentralized But Not Immune: Empirical and Formal Security Analysis of Messaging Networks" submitted at usenixsecurity'26.
+> Conduct a comprehensive analysis of decentralized messaging platforms across multiple dimensions, including architecture, performance, and security. 
+> The study, titled "Decentralized But Not Immune: Empirical and Formal Security Analysis of Messaging Networks," has been submitted to USENIX Security 2026.
