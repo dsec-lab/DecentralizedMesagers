@@ -70,7 +70,7 @@ class VirusTotalAnalyzer(object):
     def virustotal_communicating_files_analyzer(self, file_path):
         self.virustotal_communicating_files_path = file_path
         with open(self.virustotal_communicating_files_path, 'r', encoding='utf-8') as f:
-            data  = json.load(f)['data']  # 目前在利用VT进行detect时，默认的最大数量为10
+            data  = json.load(f)['data']  # Currently, when using VT for detection, the default maximum number is 10.
             for idx, virustotal_response in enumerate(data):
                 if 'attributes' not in virustotal_response.keys():
                     continue
@@ -86,7 +86,7 @@ class VirusTotalAnalyzer(object):
                     pe_info = attributes['pe_info']
                     # print(idx, id, pe_info.keys())
                     if 'overlay' in pe_info.keys():
-                        overlay = pe_info['overlay']  # 可以作为模型的特征
+                        overlay = pe_info['overlay']  #
                     if 'sections' in pe_info.keys():
                         sections = pe_info['sections']
                         for section in sections:
@@ -108,7 +108,7 @@ class VirusTotalAnalyzer(object):
     def virustotal_referrer_files_analyzer(self, file_path):
         self.virustotal_referrer_files_path = file_path
         with open(self.virustotal_referrer_files_path, 'r', encoding='utf-8') as f:
-            data  = json.load(f)['data']  # 目前在利用VT进行detect时，默认的最大数量为10
+            data  = json.load(f)['data']  # Currently, when using VT for detection, the default maximum number is 10.
             for idx, virustotal_response in enumerate(data):
                 if 'attributes' not in virustotal_response.keys():
                     continue
@@ -123,7 +123,7 @@ class VirusTotalAnalyzer(object):
                 if 'pe_info' in attributes_keys:
                     pe_info = attributes['pe_info']
                     if 'overlay' in pe_info.keys():
-                        overlay = pe_info['overlay']  # 可以作为模型的特征
+                        overlay = pe_info['overlay']  # 
                     if 'sections' in pe_info.keys():
                         sections = pe_info['sections']
                         for section in sections:
@@ -160,7 +160,7 @@ if __name__ == '__main__':
     # *******************************
     # step02: load virustotal ip reports we detected
     # *******************************
-    virustotal_report_data_dir = r'D:\科研数据\DecentralizedMessagers\DataNeedToAnalysis\virustotal_ip_report'
+    virustotal_report_data_dir = r'\DecentralizedMessagers\DataNeedToAnalysis\virustotal_ip_report'
     virustotal_analyzer = VirusTotalAnalyzer()
     for file_name in os.listdir(virustotal_report_data_dir):
         if file_name.endswith('.json'):
@@ -178,7 +178,7 @@ if __name__ == '__main__':
     # *******************************
     # step03: load virustotal ip communicating_files reports we detected
     # *******************************
-    virustotal_communicating_files_data_dir = r'D:\CodeRepos\PythonProject\DecentralizedMessager\decentralized_messagers\tools\virustotal_ip_communicating_files_report'
+    virustotal_communicating_files_data_dir = r'\DecentralizedMessager\decentralized_messagers\tools\virustotal_ip_communicating_files_report'
     for file_name in os.listdir(virustotal_communicating_files_data_dir):
         if file_name.endswith('.json'):
             ip = file_name[:-5]
@@ -194,7 +194,7 @@ if __name__ == '__main__':
     # *******************************
     # step03: load virustotal ip communicating_files reports we detected
     # *******************************
-    virustotal_referrer_files_data_dir = r'D:\CodeRepos\PythonProject\DecentralizedMessager\decentralized_messagers\tools\virustotal_ip_referrer_files_report'
+    virustotal_referrer_files_data_dir = r'\DecentralizedMessager\decentralized_messagers\tools\virustotal_ip_referrer_files_report'
     for file_name in os.listdir(virustotal_referrer_files_data_dir):
         if file_name.endswith('.json'):
             ip = file_name[:-5]
