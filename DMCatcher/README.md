@@ -1,4 +1,4 @@
-Tools to retrieve decentralized messagers node.
+Tools to retrieve metadat of decentralized messagers node.
 
 > 1. Berty
 > 2. Jami (opendht)
