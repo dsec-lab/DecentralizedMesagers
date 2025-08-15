@@ -7,8 +7,8 @@ import argparse
 from datetime import datetime
 
 
-bear_token = 'syt_bGVlaG9v_aHvkQBdDkFkBQdRXIMlV_0r0TKF'
-input_homeservers_file_path = r'homeservers_sumed_2025_03_23.csv'
+bear_token = 'your_bear_token'
+input_homeservers_file_path = r'homeservers.csv'
 not_worked_servers_file_path = r'not_worked_servers.csv'
 retrieved_servers_file_path = 'retrieved_servers.csv'
 public_rooms_file_path = r'public_rooms.json'
@@ -218,4 +218,5 @@ if __name__ == '__main__':
         retrieved_servers = load_retrieved_servers(retrieved_servers_file_path)
         homeservers.extend(retrieved_servers)
         input_homeservers = homeservers[args.start:args.end]
+
         retrieve_server_IPs(input_homeservers)
