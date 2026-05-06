@@ -1,4 +1,4 @@
 > [!IMPORTANT]
 >
 > Conduct a comprehensive analysis of decentralized messaging platforms across multiple dimensions, including architecture, performance, and security. 
-> The study, titled "Decentralized But Not Immune: Empirical and Formal Security Analysis of Messaging Networks", has been submitted to IEEE IWQoS 2026.
+> The study, titled "Decentralized But Not Immune: Empirical and Formal Security Analysis of Messaging Networks", has been accepted by IEEE IWQoS 2026.
